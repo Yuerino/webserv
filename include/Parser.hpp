@@ -1,15 +1,17 @@
 #pragma once
 
-#include <string>
-#include <vector>
 #include <iostream>
+#include <string>
 #include <stdexcept>
+#include <vector>
 #include <map>
 #include <set>
-#include <sstream>
 
+#include "utils.hpp"
+#include "Tokenizer.hpp"
 #include "Token.hpp"
 #include "ServerConfig.hpp"
+#include "LocationConfig.hpp"
 
 namespace webserv {
 	class Parser {
@@ -22,28 +24,29 @@ namespace webserv {
 	private:
 		ServerConfig parse_server_config();
 
+		LocationConfig parse_location_config();
+
 		Token expect_operator(const std::string& name);
 
 		Token expect_value();
 
 		Token expect_type(const std::string& scope);
 
-		void tokenize();
+#ifdef PARSER_DEBUG
+		void print_tokens() const ;
 
-		void add_token(Token &current_token);
+		static void print_server_configs(const std::vector<ServerConfig>& server_configs);
 
-#ifdef TOKEN_DEBUG
-		void print_tokens() const;
-
-		void print_server_configs(const std::vector<ServerConfig>& server_configs) const;
+		static void print_location_configs(const std::map<std::string, LocationConfig>& location_configs);
 #endif
 
 	private:
+		Tokenizer			_tokenizer;
+
 		std::string			_str;
-		size_t 				_cursor;
 		std::vector<Token>	_tokens;
 
-		std::map<std::string, std::set<std::string> >	_scopes_have_types;
+		std::map<std::string, std::set<std::string> >	_scopes_and_types;
 
 		std::vector<Token>::iterator	_token_it;
 		std::vector<Token>::iterator	_token_ite;
