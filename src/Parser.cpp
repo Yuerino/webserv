@@ -32,6 +32,7 @@ namespace webserv {
 				server_configs.push_back(server_config);
 			}
 		}
+		// /* debug */ print_tokens();
 		/* debug */ print_server_configs(server_configs);
 	}
 
@@ -48,7 +49,7 @@ namespace webserv {
 
 			if (token_type.text == "location") {
 				if (!server_config.add_location(parse_location_config()))
-					throw std::runtime_error(std::string("Unexpected token:" + token_type.text + " at line " + to_string(token_type.line_number)).c_str());
+					throw std::runtime_error(std::string("Unexpected token: " + token_type.text + " at line " + to_string(token_type.line_number)).c_str());
 				continue;
 			}
 
@@ -57,7 +58,7 @@ namespace webserv {
 				Token token_value = expect_value();
 
 				if (!server_config.set_config(token_type.text, token_value.text))
-					throw std::runtime_error(std::string("Unexpected token:" + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
+					throw std::runtime_error(std::string("Unexpected token: " + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
 			}
 
 			expect_operator(";");
@@ -75,7 +76,7 @@ namespace webserv {
 
 		Token token_value = expect_value();
 		if (!location_config.set_config("location", token_value.text))
-			throw std::runtime_error(std::string("Unexpected token:" + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
+			throw std::runtime_error(std::string("Unexpected token: " + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
 
 		expect_operator("{");
 
@@ -88,7 +89,7 @@ namespace webserv {
 				token_value = expect_value();
 
 				if (!location_config.set_config(token_type.text, token_value.text))
-					throw std::runtime_error(std::string("Unexpected token:" + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
+					throw std::runtime_error(std::string("Unexpected token: " + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
 			}
 
 			expect_operator(";");

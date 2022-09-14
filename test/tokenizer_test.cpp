@@ -16,7 +16,7 @@ TEST(TokenizerTest, ValidTest)
 
 	Tokenizer tokenizer;
 
-	std::vector<Token> tokens = tokenizer.tokenize(file_to_string("/Users/cthien-h/42/webserv-project/webserv/config/test/tokenizer_test.conf"));
+	std::vector<Token> tokens = tokenizer.tokenize(file_to_string("./test/config/tokenizer_test.conf"));
 
 	std::vector<Token>::iterator t_it = tokens.begin();
 	std::vector<Token>::iterator t_ite = tokens.end();

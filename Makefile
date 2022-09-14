@@ -47,7 +47,7 @@ re: clean all
 
 TEST_NAME	=	unit_test
 
-T_SRC_DIR	=	test/src
+T_SRC_DIR	=	test
 
 T_SRCS		=	$(notdir $(wildcard $(T_SRC_DIR)/*.cpp))
 T_OBJS		=	$(T_SRCS:%.cpp=$(OBJ_DIR)/%.o)
@@ -67,7 +67,7 @@ run_test: $(TEST_NAME)
 		./$(TEST_NAME) --gtest_brief=1
 
 $(TEST_NAME): $(OBJS) $(GTEST_OBJS) $(T_OBJS)
-		@$(CXX) $(CXXFLAGS) $(T_IFLAGS) -pthread -std=c++14 -lpthread -o $@ $^
+		@$(CXX) $(CXXFLAGS) $(T_IFLAGS) -pthread -lpthread -o $@ $^
 		@echo "Build $(TEST_NAME) succesfully!"
 
 $(GTEST_OBJS): $(OBJ_DIR)/%.o: %.cc
