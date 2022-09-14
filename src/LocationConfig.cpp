@@ -52,6 +52,8 @@ namespace webserv {
 			_index = value;
 		else if (type == "allow_methods")
 			return _allow_methods.insert(value).second;
+		else if (type == "cgi_path" && _cgi_path.empty())
+			_cgi_path = value;
 		else
 			return false;
 		return true;
