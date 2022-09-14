@@ -64,3 +64,4 @@ dkms.conf
 # 42
 obj/
 webserv
+unit_test
