@@ -32,8 +32,11 @@ namespace webserv {
 				server_configs.push_back(server_config);
 			}
 		}
+
+#ifdef PARSER_DEBUG
 		// /* debug */ print_tokens();
 		/* debug */ print_server_configs(server_configs);
+#endif
 	}
 
 	/**
