@@ -5,10 +5,14 @@
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
+#include <ctime>
 
 #define RED "\033[31m"
 #define GREEN "\033[32m"
 #define YELLOW "\033[33m"
+#define BLUE "\033[34m"
+#define PURPLE "\033[35m"
+#define CYAN "\033[36m"
 #define RESET "\033[0m"
 
 namespace webserv {
@@ -25,4 +29,6 @@ namespace webserv {
 	}
 
 	std::string file_to_string(const std::string& file_path);
+
+	std::string get_current_time(const char* format);
 } /* namespace webserv */
