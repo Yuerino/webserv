@@ -20,4 +20,16 @@ namespace webserv {
 
 		return str;
 	}
+
+	/**
+	 * @brief Get the current time in format and return as string
+	 */
+	std::string get_current_time(const char* format) {
+		std::time_t time_epoch = std::time(0);
+		char buffer[69];
+
+		std::strftime(buffer, sizeof(buffer), format, std::localtime(&time_epoch));
+
+		return std::string(buffer);
+	}
 } /* namespace webserv */

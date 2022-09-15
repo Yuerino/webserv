@@ -10,7 +10,7 @@ namespace webserv {
 		OPERATOR
 	};
 
-	static const char * const TokenTypeString[] = {
+	static const char* const TokenTypeString[] = {
 		"WHITESPACE",
 		"COMMENT",
 		"IDENTIFIER",

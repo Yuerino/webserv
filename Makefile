@@ -9,15 +9,15 @@ OBJS		=	$(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS		=	$(OBJS:%.o=%.d)
 
 CXX			=	c++
-CXXFLAGS	=	-Wall -Wextra -Werror $(IFLAGS) $(CDEBUG)
+CXXFLAGS	=	-Wall -Wextra -Werror $(IFLAGS)
 CXX98FLAGS	=	-std=c++98 -pedantic-errors
 LDFLAGS		=
 IFLAGS		=	-I./$(INC_DIR)
-CDEBUG		=	-g -DPARSER_DEBUG
+CDEBUG		=	-g -D PARSER_DEBUG
 
 RM			=	rm -f
 
-.PHONY: all clean fclean re run_test
+.PHONY: all clean fclean re debug run_test
 
 $(NAME): $(OBJS) $(OBJ_DIR)/main.o
 		@$(CXX) $(CXXFLAGS) $(CXX98FLAGS) $(LDFLAGS) -o $@ $^
@@ -41,6 +41,9 @@ fclean: clean
 		@$(RM) $(NAME) $(TEST_NAME)
 
 re: clean all
+
+debug: CXX98FLAGS += $(CDEBUG)
+debug: re
 
 #=============================================================================#
 # Unit test stuff
@@ -67,17 +70,17 @@ run_test: $(TEST_NAME)
 		./$(TEST_NAME) --gtest_brief=1
 
 $(TEST_NAME): $(OBJS) $(GTEST_OBJS) $(T_OBJS)
-		@$(CXX) $(CXXFLAGS) $(T_IFLAGS) -pthread -lpthread -o $@ $^
+		@$(CXX) $(CXXFLAGS) -pthread $(T_IFLAGS) -lpthread -o $@ $^
 		@echo "Build $(TEST_NAME) succesfully!"
 
 $(GTEST_OBJS): $(OBJ_DIR)/%.o: %.cc
 		@echo "Compiling $<"
 		@mkdir -p $(@D)
-		@$(CXX) $(CXXFLAGS) $(T_IFLAGS) -pthread -std=c++14 -o $@ -c $<
+		@$(CXX) $(CXXFLAGS) -pthread -std=c++14 $(T_IFLAGS) -o $@ -c $<
 
 $(T_OBJS): $(OBJ_DIR)/%.o: %.cpp
 		@echo "Compiling $<"
 		@mkdir -p $(@D)
-		@$(CXX) $(CXXFLAGS) $(T_IFLAGS) -pthread -std=c++14 -o $@ -c $<
+		@$(CXX) $(CXXFLAGS)  -pthread -std=c++14 $(T_IFLAGS) -o $@ -c $<
 
 #=============================================================================#
