@@ -37,7 +37,7 @@ namespace webserv {
 		log(log_data);
 	}
 
-	Logger& Logger::getInstance() {
+	Logger& Logger::get_instance() {
 		static Logger logger;
 
 		return logger;

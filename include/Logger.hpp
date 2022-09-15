@@ -8,7 +8,7 @@
 #define LOG_E() LOG(webserv::LOG_ERROR)
 #define LOG_D() LOG(webserv::LOG_DEBUG)
 
-#define LOG(log_level) webserv::Logger::getInstance() += webserv::LogData(log_level, __FILE__, __LINE__)
+#define LOG(log_level) webserv::Logger::get_instance() += webserv::LogData(log_level, __FILE__, __LINE__)
 
 namespace webserv {
 	/**
@@ -16,7 +16,7 @@ namespace webserv {
 	 */
 	class Logger {
 	public:
-		static Logger& getInstance();
+		static Logger& get_instance();
 
 		void log(const LogData& log_data);
 		void operator+=(const LogData& log_data);
