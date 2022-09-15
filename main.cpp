@@ -4,10 +4,11 @@
 
 #include "utils.hpp"
 #include "Parser.hpp"
+#include "Logger.hpp"
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
-		std::cerr << RED << "Invalid number of arguments." << RESET << std::endl;
+		LOG_E() << "Invalid number of arguments.\n";
 		return EXIT_FAILURE;
 	}
 
@@ -16,7 +17,7 @@ int main(int argc, char **argv) {
 	try {
 		parser.parse(webserv::file_to_string(argv[1]));
 	} catch (const std::exception& e) {
-		std::cerr << RED << e.what() << RESET << std::endl;
+		LOG_E() << e.what() << "\n";
 		return EXIT_FAILURE;
 	}
 
