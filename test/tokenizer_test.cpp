@@ -4,9 +4,8 @@
 
 #include "utils.hpp"
 #include "Tokenizer.hpp"
-#include "Token.hpp"
 
-namespace webserv {
+namespace webserv { namespace internal {
 
 TEST(TokenizerTest, ValidTest)
 {
@@ -33,4 +32,4 @@ TEST(TokenizerTest, ValidTest)
 	}
 };
 
-} /* namespace webserv */
+}} /* namespace webserv::internal */

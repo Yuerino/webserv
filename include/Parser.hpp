@@ -9,7 +9,6 @@
 
 #include "utils.hpp"
 #include "Tokenizer.hpp"
-#include "Token.hpp"
 #include "ServerConfig.hpp"
 #include "LocationConfig.hpp"
 
@@ -26,11 +25,11 @@ namespace webserv {
 
 		LocationConfig parse_location_config();
 
-		Token expect_operator(const std::string& name);
+		internal::Token expect_operator(const std::string& name);
 
-		Token expect_value();
+		internal::Token expect_value();
 
-		Token expect_type(const std::string& scope);
+		internal::Token expect_type(const std::string& scope);
 
 #ifdef PARSER_DEBUG
 		void print_tokens() const ;
@@ -41,15 +40,15 @@ namespace webserv {
 #endif
 
 	private:
-		Tokenizer			_tokenizer;
+		internal::Tokenizer				_tokenizer;
 
-		std::string			_str;
-		std::vector<Token>	_tokens;
+		std::string						_str;
+		std::vector<internal::Token>	_tokens;
 
 		std::map<std::string, std::set<std::string> >	_scopes_and_types;
 
-		std::vector<Token>::iterator	_token_it;
-		std::vector<Token>::iterator	_token_ite;
+		std::vector<internal::Token>::iterator	_token_it;
+		std::vector<internal::Token>::iterator	_token_ite;
 
 		Parser(const Parser& copy); /* disabled */
 		Parser& operator=(const Parser& other); /* disabled */
@@ -66,6 +65,6 @@ namespace webserv {
 
 		const size_t& get_line() const throw();
 	protected:
-		size_t _line;
+		size_t	_line;
 	};
 } /* namespace webserv */

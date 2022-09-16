@@ -41,10 +41,10 @@ namespace webserv {
 			std::string get_message() const;
 
 		private:
-			enum LogLevel _log_level;
-			const char* _file;
-			size_t _line;
-			std::ostringstream _message;
+			enum LogLevel		_log_level;
+			const char*			_file;
+			size_t				_line;
+			std::ostringstream	_message;
 
 			void set_log_info();
 

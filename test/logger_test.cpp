@@ -2,7 +2,7 @@
 
 #include "Logger.hpp"
 
-namespace webserv::internal {
+namespace webserv { namespace internal {
 
 TEST(LogDataTest, LogDataInfoTest) {
 	LogData data(LOG_INFO, __FILE__, __LINE__);
@@ -68,4 +68,4 @@ TEST(LoggerTest, LogDebugTest) {
 	EXPECT_EQ(without_time, "\x1B[0m\x1B[33m[DEBUG] [test/logger_test.cpp:64] Some debug: 42, and another one\n\x1B[0m");
 };
 
-} /* namespace webserv */
+}} /* namespace webserv::internal */

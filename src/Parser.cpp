@@ -25,7 +25,7 @@ namespace webserv {
 
 		std::vector<ServerConfig> server_configs;
 		while (_token_it != _token_ite) {
-			Token token = expect_type("global");
+			internal::Token token = expect_type("global");
 
 			if (token.text == "server") {
 				ServerConfig server_config;
@@ -49,8 +49,8 @@ namespace webserv {
 		expect_operator("{");
 
 		while (_token_it != _token_ite
-			&& (_token_it->type != OPERATOR && _token_it->text != "}")) {
-			Token token_type = expect_type("server");
+			&& (_token_it->type != internal::OPERATOR && _token_it->text != "}")) {
+			internal::Token token_type = expect_type("server");
 
 			if (token_type.text == "location") {
 				if (!server_config.add_location(parse_location_config())) {
@@ -60,8 +60,8 @@ namespace webserv {
 			}
 
 			while (_token_it != _token_ite
-				&& (_token_it->type != OPERATOR && _token_it->text != ";")) {
-				Token token_value = expect_value();
+				&& (_token_it->type != internal::OPERATOR && _token_it->text != ";")) {
+				internal::Token token_value = expect_value();
 
 				if (!server_config.set_config(token_type.text, token_value.text)) {
 					throw ParserExceptionAtLine("Unexpected token: " + token_value.text, token_value.line_number);
@@ -82,7 +82,7 @@ namespace webserv {
 	LocationConfig Parser::parse_location_config() {
 		LocationConfig location_config;
 
-		Token token_value = expect_value();
+		internal::Token token_value = expect_value();
 		if (!location_config.set_config("location", token_value.text)) {
 			throw ParserExceptionAtLine("Unexpected token: " + token_value.text, token_value.line_number);
 		}
@@ -90,11 +90,11 @@ namespace webserv {
 		expect_operator("{");
 
 		while (_token_it != _token_ite
-			&& (_token_it->type != OPERATOR && _token_it->text != "}")) {
-			Token token_type = expect_type("location");
+			&& (_token_it->type != internal::OPERATOR && _token_it->text != "}")) {
+			internal::Token token_type = expect_type("location");
 
 			while (_token_it != _token_ite
-				&& (_token_it->type != OPERATOR && _token_it->text != ";")) {
+				&& (_token_it->type != internal::OPERATOR && _token_it->text != ";")) {
 				token_value = expect_value();
 
 				if (!location_config.set_config(token_type.text, token_value.text)) {
@@ -113,16 +113,16 @@ namespace webserv {
 	 * @brief Expect and return operator token matched name
 	 * @exception Throw ParserException if can't find expected opterator
 	 */
-	Token Parser::expect_operator(const std::string& name) {
+	internal::Token Parser::expect_operator(const std::string& name) {
 		if (_token_it == _token_ite) {
 			throw ParserException("Unexpected end of file, expected: " + name);
 		}
 
-		if (_token_it->type != OPERATOR || (!name.empty() && _token_it->text != name)) {
+		if (_token_it->type != internal::OPERATOR || (!name.empty() && _token_it->text != name)) {
 			throw ParserExceptionAtLine("Unexpected token: " + _token_it->text + ", expected: " + name, _token_it->line_number);
 		}
 
-		Token token = *_token_it;
+		internal::Token token = *_token_it;
 		++_token_it;
 
 		return token;
@@ -132,16 +132,16 @@ namespace webserv {
 	 * @brief Expect and return identifier token
 	 * @exception Throw ParserException next token isn't an itentifier token
 	 */
-	Token Parser::expect_value() {
+	internal::Token Parser::expect_value() {
 		if (_token_it == _token_ite) {
 			throw ParserException("Unexpected end of file");
 		}
 
-		if (_token_it->type != IDENTIFIER) {
+		if (_token_it->type != internal::IDENTIFIER) {
 			throw ParserExceptionAtLine("Unexpected token: " + _token_it->text, _token_it->line_number);
 		}
 
-		Token token = *_token_it;
+		internal::Token token = *_token_it;
 		++_token_it;
 
 		return token;
@@ -151,12 +151,12 @@ namespace webserv {
 	 * @brief Expect and return identifier token that matched types within scope
 	 * @exception Throw ParserException if can't find expected type within scope
 	 */
-	Token Parser::expect_type(const std::string& scope) {
+	internal::Token Parser::expect_type(const std::string& scope) {
 		if (_token_it == _token_ite) {
 			throw ParserException("Unexpected end of file");
 		}
 
-		if (_token_it->type != IDENTIFIER) {
+		if (_token_it->type != internal::IDENTIFIER) {
 			throw ParserExceptionAtLine("Unexpected token: " + _token_it->text + " in " + scope + " scope", _token_it->line_number);
 		}
 
@@ -170,7 +170,7 @@ namespace webserv {
 			throw ParserExceptionAtLine("Unexpected type: " + _token_it->text + " in " + scope + " scope", _token_it->line_number);
 		}
 
-		Token token = *_token_it;
+		internal::Token token = *_token_it;
 		++_token_it;
 
 		return token;
