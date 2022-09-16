@@ -54,4 +54,18 @@ namespace webserv {
 		Parser(const Parser& copy); /* disabled */
 		Parser& operator=(const Parser& other); /* disabled */
 	};
+
+	class ParserException : public std::invalid_argument {
+	public:
+		ParserException(std::string message) throw();
+	};
+
+	class ParserExceptionAtLine : public ParserException {
+	public:
+		ParserExceptionAtLine(std::string message, size_t line) throw();
+
+		const size_t& get_line() const throw();
+	protected:
+		size_t _line;
+	};
 } /* namespace webserv */

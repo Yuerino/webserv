@@ -20,6 +20,12 @@ int main(int argc, char **argv) {
 	webserv::Parser parser;
 	try {
 		parser.parse(webserv::file_to_string(argv[1]));
+	} catch (const webserv::ParserExceptionAtLine& e) {
+		LOG_E() << "[" << argv[1] << ":" << e.get_line() << "] " << e.what() << "\n";
+		return EXIT_FAILURE;
+	} catch (const webserv::ParserException& e) {
+		LOG_E() << "[" << argv[1] << "] " << e.what() << "\n";
+		return EXIT_FAILURE;
 	} catch (const std::exception& e) {
 		LOG_E() << e.what() << "\n";
 		return EXIT_FAILURE;
