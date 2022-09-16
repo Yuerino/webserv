@@ -15,6 +15,14 @@
 #define CYAN "\033[36m"
 #define RESET "\033[0m"
 
+#include "Logger.hpp"
+
+#define LOG_I() LOG(webserv::LOG_INFO)
+#define LOG_E() LOG(webserv::LOG_ERROR)
+#define LOG_D() LOG(webserv::LOG_DEBUG)
+
+#define LOG(log_level) webserv::internal::Logger::get_instance() += webserv::internal::LogData(log_level, __FILE__, __LINE__)
+
 namespace webserv {
 	/**
 	 * @brief Convert T type to string

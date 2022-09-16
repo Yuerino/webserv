@@ -2,7 +2,7 @@
 
 #include "Logger.hpp"
 
-namespace webserv {
+namespace webserv::internal {
 
 TEST(LogDataTest, LogDataInfoTest) {
 	LogData data(LOG_INFO, __FILE__, __LINE__);

@@ -4,7 +4,6 @@
 
 #include "utils.hpp"
 #include "Parser.hpp"
-#include "Logger.hpp"
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
