@@ -31,4 +31,6 @@ namespace webserv {
 	std::string file_to_string(const std::string& file_path);
 
 	std::string get_current_time(const char* format);
+
+	bool is_valid_extension(const std::string& file, const std::string& extension);
 } /* namespace webserv */

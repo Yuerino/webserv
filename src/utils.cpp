@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "Logger.hpp"
 
 namespace webserv {
 	/**
@@ -31,5 +32,17 @@ namespace webserv {
 		std::strftime(buffer, sizeof(buffer), format, std::localtime(&time_epoch));
 
 		return std::string(buffer);
+	}
+
+	/**
+	 * @brief Check if file has correct extension
+	 */
+	bool is_valid_extension(const std::string& file, const std::string& extension) {
+		size_t ext_pos = file.rfind('.');
+
+		if (ext_pos == std::string::npos || file.substr(ext_pos) != extension)
+			return false;
+
+		return true;
 	}
 } /* namespace webserv */
