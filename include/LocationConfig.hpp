@@ -4,6 +4,8 @@
 #include <string>
 #include <set>
 
+#include "utils.hpp"
+
 namespace webserv {
 	class LocationConfig {
 	public:
@@ -14,6 +16,7 @@ namespace webserv {
 
 		static void register_types(std::set<std::string>& types);
 		bool set_config(const std::string& type, const std::string& value);
+		bool set_default();
 
 		/* Getters */
 		const std::string& get_location() const;
@@ -28,6 +31,8 @@ namespace webserv {
 		std::string				_index;
 		std::set<std::string>	_allow_methods;
 		std::string				_cgi_path;
+
+		bool add_allow_methods(const std::string& method);
 	};
 
 #ifdef PARSER_DEBUG

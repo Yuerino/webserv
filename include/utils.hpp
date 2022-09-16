@@ -24,6 +24,18 @@
 #define LOG(log_level) webserv::internal::Logger::get_instance() += webserv::internal::LogData(log_level, __FILE__, __LINE__)
 
 namespace webserv {
+	/* Temporary put it here until we work on HTTP stuff */
+	static const char* const HTTPMethodStrings[] = {
+		"GET",
+		"HEAD",
+		"POST",
+		"PUT",
+		"DELETE",
+		"CONNECT",
+		"OPTIONS",
+		"TRACE"
+	};
+
 	/**
 	 * @brief Convert T type to string
 	 * @note Only if T type has operator<< overloaded

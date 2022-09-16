@@ -44,19 +44,69 @@ namespace webserv {
 	 * @return True if successfully set the value, otherwise false
 	 */
 	bool LocationConfig::set_config(const std::string& type, const std::string& value) {
-		if (type == "location" && _location.empty())
+		if (type == "location" && _location.empty()) {
 			_location = value;
-		else if (type == "root" && _root.empty())
+		} else if (type == "root" && _root.empty()) {
 			_root = value;
-		else if (type == "index" && _index.empty())
+		} else if (type == "index" && _index.empty()) {
 			_index = value;
-		else if (type == "allow_methods")
-			return _allow_methods.insert(value).second;
-		else if (type == "cgi_path" && _cgi_path.empty())
+		} else if (type == "allow_methods") {
+			return add_allow_methods(value);
+		} else if (type == "cgi_path" && _cgi_path.empty()) {
 			_cgi_path = value;
-		else
+		} else {
 			return false;
+		}
+
 		return true;
+	}
+
+	/**
+	 * @brief Set the rest of unset configuration to default value
+	 * @return true if succesfully set otherwise false
+	 */
+	bool LocationConfig::set_default() {
+		if (_location.empty()) {
+			return false;
+		}
+
+		if (_root.empty()) {
+			_root = "http";
+		}
+
+		if (_index.empty()) {
+			_index = "index.html";
+		}
+
+		if (_allow_methods.empty()) {
+			size_t i = 0;
+			size_t size = sizeof(HTTPMethodStrings) / sizeof(const char*);
+
+			for (; i < size; ++i) {
+				_allow_methods.insert(HTTPMethodStrings[i]);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * @brief Check if method is valid and add method to allow_methods
+	 */
+	bool LocationConfig::add_allow_methods(const std::string& method) {
+		size_t i = 0;
+		size_t size = sizeof(HTTPMethodStrings) / sizeof(const char*);
+
+		for (; i < size; ++i) {
+			if (method == HTTPMethodStrings[i])
+				break;
+		}
+
+		if (i >= size) {
+			return false;
+		}
+
+		return _allow_methods.insert(method).second;
 	}
 
 	/* Getters */

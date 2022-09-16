@@ -72,6 +72,10 @@ namespace webserv {
 			expect_operator(";");
 		}
 
+		if (!server_config.set_default()) {
+			throw ParserExceptionAtLine("Missing default server configuration", (_token_it != _token_ite) ? _token_it->line_number : (_token_it - 1)->line_number);
+		}
+
 		expect_operator("}");
 		return server_config;
 	}
@@ -104,6 +108,10 @@ namespace webserv {
 			}
 
 			expect_operator(";");
+		}
+
+		if (!location_config.set_default()) {
+			throw ParserExceptionAtLine("Missing default location configuration", (_token_it != _token_ite) ? _token_it->line_number : (_token_it - 1)->line_number);
 		}
 
 		expect_operator("}");

@@ -48,18 +48,20 @@ namespace webserv {
 	 * @return true if successfully set the value, otherwise false
 	 */
 	bool ServerConfig::set_config(const std::string& type, const std::string& value) {
-		if (type == "server_name")
-			_server_names.push_back(value);
-		else if (type == "listen")
-			_listens.push_back(value);
-		else if (type == "root" && _root.empty())
+		if (type == "server_name") {
+			return _server_names.insert(value).second;
+		} else if (type == "listen") {
+			return _listens.insert(value).second;
+		} else if (type == "root" && _root.empty()) {
 			_root = value;
-		else if (type == "index" && _index.empty())
+		} else if (type == "index" && _index.empty()) {
 			_index = value;
-		else if (type == "allow_methods")
-			return _allow_methods.insert(value).second;
-		else
+		} else if (type == "allow_methods") {
+			return add_allow_methods(value);
+		} else {
 			return false;
+		}
+
 		return true;
 	}
 
@@ -71,9 +73,61 @@ namespace webserv {
 		return _locations.insert(std::make_pair(location_config.get_location(), location_config)).second;
 	}
 
+	/**
+	 * @brief Set the rest of unset configuration to default value
+	 * @return true if succesfully set otherwise false
+	 */
+	bool ServerConfig::set_default() {
+		if (_listens.empty()) {
+			_listens.insert("80");
+		}
+
+		if (_root.empty()) {
+			_root = "http";
+		}
+
+		if (_index.empty()) {
+			_index = "index.html";
+		}
+
+		if (_allow_methods.empty()) {
+			size_t i = 0;
+			size_t size = sizeof(HTTPMethodStrings) / sizeof(const char*);
+
+			for (; i < size; ++i) {
+				_allow_methods.insert(HTTPMethodStrings[i]);
+			}
+		}
+
+		if (_locations.empty()) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * @brief Check if method is valid and add method to allow_methods
+	 */
+	bool ServerConfig::add_allow_methods(const std::string& method) {
+		size_t i = 0;
+		size_t size = sizeof(HTTPMethodStrings) / sizeof(const char*);
+
+		for (; i < size; ++i) {
+			if (method == HTTPMethodStrings[i])
+				break;
+		}
+
+		if (i >= size) {
+			return false;
+		}
+
+		return _allow_methods.insert(method).second;
+	}
+
 	/* Getters */
-	const std::vector<std::string>& ServerConfig::get_server_names() const { return _server_names; }
-	const std::vector<std::string>& ServerConfig::get_listens() const { return _listens; }
+	const std::set<std::string>& ServerConfig::get_server_names() const { return _server_names; }
+	const std::set<std::string>& ServerConfig::get_listens() const { return _listens; }
 	const std::string& ServerConfig::get_root() const { return _root; }
 	const std::string& ServerConfig::get_index() const { return _index; }
 	const std::set<std::string>& ServerConfig::get_allow_methods() const { return _allow_methods; }
@@ -84,13 +138,13 @@ namespace webserv {
 		os << "server {\n";
 
 		os << "\tserver_name";
-		for (std::vector<std::string>::const_iterator _it = server_config.get_server_names().begin();
+		for (std::set<std::string>::const_iterator _it = server_config.get_server_names().begin();
 			_it != server_config.get_server_names().end(); ++_it)
 			os << " " << *_it;
 		os << ";\n";
 
 		os << "\tlisten";
-		for (std::vector<std::string>::const_iterator _it = server_config.get_listens().begin();
+		for (std::set<std::string>::const_iterator _it = server_config.get_listens().begin();
 			_it != server_config.get_listens().end(); ++_it)
 			os << " " << *_it;
 		os << ";\n";
