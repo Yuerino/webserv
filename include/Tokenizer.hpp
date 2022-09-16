@@ -1,7 +1,9 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 #include <vector>
+#include <iomanip>
 
 namespace webserv {
 	namespace internal {
@@ -43,5 +45,10 @@ namespace webserv {
 			Tokenizer(const Tokenizer& copy); /* disabled */
 			Tokenizer& operator=(const Tokenizer& other); /* disabled */
 		};
+
+#ifdef PARSER_DEBUG
+		std::ostream& operator<<(std::ostream& os, const Token& token);
+#endif
+
 	} /* namespace internal */
 } /* namespace webserv */

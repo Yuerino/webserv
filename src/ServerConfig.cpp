@@ -78,4 +78,42 @@ namespace webserv {
 	const std::string& ServerConfig::get_index() const { return _index; }
 	const std::set<std::string>& ServerConfig::get_allow_methods() const { return _allow_methods; }
 	const std::map<std::string, LocationConfig>& ServerConfig::get_locations() const { return _locations; }
+
+#ifdef PARSER_DEBUG
+	std::ostream& operator<<(std::ostream& os, const ServerConfig& server_config) {
+		os << "server {\n";
+
+		os << "\tserver_name";
+		for (std::vector<std::string>::const_iterator _it = server_config.get_server_names().begin();
+			_it != server_config.get_server_names().end(); ++_it)
+			os << " " << *_it;
+		os << ";\n";
+
+		os << "\tlisten";
+		for (std::vector<std::string>::const_iterator _it = server_config.get_listens().begin();
+			_it != server_config.get_listens().end(); ++_it)
+			os << " " << *_it;
+		os << ";\n";
+
+		os << "\troot " << server_config.get_root() << ";\n";
+		os << "\tindex " << server_config.get_index() << ";\n";
+
+		os << "\tallow_methods";
+		for (std::set<std::string>::const_iterator _it = server_config.get_allow_methods().begin();
+			_it != server_config.get_allow_methods().end(); ++_it)
+			os << " " << *_it;
+		os << ";\n";
+
+		std::map<std::string, LocationConfig>::const_iterator lit = server_config.get_locations().begin();
+		std::map<std::string, LocationConfig>::const_iterator lite = server_config.get_locations().end();
+
+		for (; lit != lite; ++lit) {
+			os << lit->second;
+		}
+
+		os << "}\n";
+		return os;
+	}
+#endif
+
 } /* namespace webserv */

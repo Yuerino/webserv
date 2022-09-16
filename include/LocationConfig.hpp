@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 #include <set>
 
@@ -28,4 +29,9 @@ namespace webserv {
 		std::set<std::string>	_allow_methods;
 		std::string				_cgi_path;
 	};
+
+#ifdef PARSER_DEBUG
+	std::ostream& operator<<(std::ostream& os, const LocationConfig& location_config);
+#endif
+
 } /* namespace webserv */

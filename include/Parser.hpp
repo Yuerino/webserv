@@ -31,14 +31,6 @@ namespace webserv {
 
 		internal::Token expect_type(const std::string& scope);
 
-#ifdef PARSER_DEBUG
-		void print_tokens() const ;
-
-		static void print_server_configs(const std::vector<ServerConfig>& server_configs);
-
-		static void print_location_configs(const std::map<std::string, LocationConfig>& location_configs);
-#endif
-
 	private:
 		internal::Tokenizer				_tokenizer;
 
@@ -67,4 +59,24 @@ namespace webserv {
 	protected:
 		size_t	_line;
 	};
+
+	namespace internal {
+
+#ifdef PARSER_DEBUG
+		/**
+		 * @brief Debug function to print any vector<T>
+		 * @note As long as T type has operator<< for ostream overloaded
+		 */
+		template <typename T>
+		static void print_debug_vector(const std::vector<T>& v) {
+			typename std::vector<T>::const_iterator it = v.begin();
+			typename std::vector<T>::const_iterator ite = v.end();
+
+			for (; it != ite; ++it) {
+				LOG_D() << *it << "\n";
+			}
+		}
+#endif
+
+	} /* namespace intenral */
 } /* namespace webserv */

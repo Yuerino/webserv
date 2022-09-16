@@ -1,6 +1,8 @@
 #include "Parser.hpp"
 
 namespace webserv {
+	/* Class Parser */
+
 	Parser::Parser() : _tokenizer(), _str(), _tokens(), _scopes_and_types() {
 		/* register global scope types */
 		_scopes_and_types["global"].insert("server");
@@ -35,8 +37,7 @@ namespace webserv {
 		}
 
 #ifdef PARSER_DEBUG
-		// /* debug */ print_tokens();
-		/* debug */ print_server_configs(server_configs);
+		/* debug */ internal::print_debug_vector(server_configs);
 #endif
 	}
 
@@ -176,75 +177,7 @@ namespace webserv {
 		return token;
 	}
 
-#ifdef PARSER_DEBUG
-	/**
-	 * @brief Debug function to print all tokens
-	 */
-	void Parser::print_tokens() const {
-		std::vector<Token>::const_iterator it = _tokens.begin();
-		std::vector<Token>::const_iterator ite = _tokens.end();
-
-		for (; it != ite; ++it) {
-			std::cout << "Token(" << TokenTypeString[it->type] << "): \"" << it->text << "\" at line: ";
-			std::cout << it->line_number << "." << std::endl;
-		}
-	}
-
-	/**
-	 * @brief Debug function to print all server_configs
-	 */
-	void Parser::print_server_configs(const std::vector<ServerConfig>& server_configs) {
-		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
-		std::vector<ServerConfig>::const_iterator ite = server_configs.end();
-
-		for (; it != ite; ++it) {
-			std::cout << "Server config: { ";
-			std::cout << "server_name [ ";
-			for (std::vector<std::string>::const_iterator _it = it->get_server_names().begin();
-				_it != it->get_server_names().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], listen [ ";
-			for (std::vector<std::string>::const_iterator _it = it->get_listens().begin();
-				_it != it->get_listens().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], root ";
-			std::cout << it->get_root();
-			std::cout << ", index ";
-			std::cout << it->get_index();
-			std::cout << ", allow_methods [ ";
-			for (std::set<std::string>::const_iterator _it = it->get_allow_methods().begin();
-				_it != it->get_allow_methods().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], location [ ";
-			Parser::print_location_configs(it->get_locations());
-			std::cout << "] }" << std::endl;
-		}
-	}
-
-	/**
-	 * @brief Debug function to print all location_configs
-	 */
-	void Parser::print_location_configs(const std::map<std::string, LocationConfig>& location_configs) {
-		std::map<std::string, LocationConfig>::const_iterator it = location_configs.begin();
-		std::map<std::string, LocationConfig>::const_iterator ite = location_configs.end();
-
-		for (; it != ite; ++it) {
-			std::cout << "location ";
-			std::cout << it->first << " { ";
-			std::cout << "root ";
-			std::cout << it->second.get_root();
-			std::cout << ", index ";
-			std::cout << it->second.get_index();
-			std::cout << ", allow_methods [ ";
-			for (std::set<std::string>::const_iterator _it = it->second.get_allow_methods().begin();
-				_it != it->second.get_allow_methods().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], cgi_path ";
-			std::cout << it->second.get_cgi_path();
-			std::cout << " }" << std::endl;
-		}
-	}
-#endif
+	/* Class ParserException */
 
 	ParserException::ParserException(std::string message) throw() : std::invalid_argument(message) {}
 

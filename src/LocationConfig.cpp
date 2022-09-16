@@ -65,4 +65,25 @@ namespace webserv {
 	const std::string& LocationConfig::get_index() const { return _index; }
 	const std::set<std::string>& LocationConfig::get_allow_methods() const { return _allow_methods; }
 	const std::string& LocationConfig::get_cgi_path() const { return _cgi_path; }
+
+#ifdef PARSER_DEBUG
+	std::ostream& operator<<(std::ostream& os, const LocationConfig& location_config) {
+		os << "\tlocation " << location_config.get_location() << " {\n";
+
+		os << "\t\troot " << location_config.get_root() << ";\n";
+		os << "\t\tindex " << location_config.get_index() << ";\n";
+
+		os << "\t\tallow_methods";
+		for (std::set<std::string>::const_iterator _it = location_config.get_allow_methods().begin();
+			_it != location_config.get_allow_methods().end(); ++_it)
+			os << " " << *_it;
+		os << ";\n";
+
+		os << "\t\tcgi_path " << location_config.get_cgi_path() << ";\n";
+
+		os << "\t}\n";
+		return os;
+	}
+#endif
+
 } /* namespace webserv */

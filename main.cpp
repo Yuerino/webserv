@@ -2,6 +2,10 @@
 #include <stdexcept>
 #include <stdlib.h>
 
+#ifdef DEBUG
+#define PARSER_DEBUG
+#endif
+
 #include "utils.hpp"
 #include "Parser.hpp"
 

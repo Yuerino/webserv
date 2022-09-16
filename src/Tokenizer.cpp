@@ -2,6 +2,8 @@
 
 namespace webserv {
 	namespace internal {
+		/* Class Tokenizer */
+
 		Tokenizer::Tokenizer() : _str(), _cursor(0), _current_token(), _tokens() {}
 
 		Tokenizer::~Tokenizer() {}
@@ -73,5 +75,15 @@ namespace webserv {
 			_current_token.text.erase();
 			_current_token.type = WHITESPACE;
 		}
+
+#ifdef PARSER_DEBUG
+		std::ostream& operator<<(std::ostream& os, const Token& token) {
+			os << "[line " << token.line_number << "]";
+			os << "[" <<  TokenTypeString[token.type] << "] "  << std::setw(3);
+			os << token.text;
+			return os;
+		}
+#endif
+
 	} /* namespace internal */
 } /* namespace webserv */

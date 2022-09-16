@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 #include <vector>
 #include <set>
@@ -35,4 +36,9 @@ namespace webserv {
 		std::set<std::string>					_allow_methods;
 		std::map<std::string, LocationConfig>	_locations;
 	};
+
+#ifdef PARSER_DEBUG
+	std::ostream& operator<<(std::ostream& os, const ServerConfig& server_config);
+#endif
+
 } /* namespace webserv */
