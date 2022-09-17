@@ -5,11 +5,6 @@
 #include <set>
 #include <map>
 #include <cstdlib>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <cerrno>
-#include <cstring>
 
 #include "LocationConfig.hpp"
 

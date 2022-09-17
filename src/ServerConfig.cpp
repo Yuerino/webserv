@@ -151,48 +151,32 @@ namespace webserv {
 	bool ServerConfig::add_listen(const std::string& value) {
 		Listen listen;
 		size_t sep_pos;
+		std::string port_str;
 
 		sep_pos = value.find(":");
 
-		if (sep_pos == std::string::npos) {
-			if (!is_digits(value)) {
-				return false;
-			}
-
-			listen.port = std::atoi(value.c_str());
-			if (listen.port < 1 || listen.port > 65535) {
-				return false;
-			}
-
-			listen.address = "";
-			return _listens.insert(listen).second;
-		} else {
-			int r;
-			unsigned char buffer[sizeof(in_addr)];
-
+		if (sep_pos != std::string::npos) {
 			listen.address = value.substr(0, sep_pos);
-
-			r = inet_pton(AF_INET, listen.address.c_str(), buffer);
-			if (r == 0) {
-				return false;
-			} else if (r < 0) {
-				LOG_E() << "Fatal error: inet_pton: " << std::strerror(errno) << "\n";
-				exit(EXIT_FAILURE);
-			}
-
-			std::string port_str = value.substr(sep_pos + 1);
-			if (!is_digits(port_str)) {
+			if (!is_ip4(listen.address)) {
 				return false;
 			}
 
-			listen.port = std::atoi(port_str.c_str());
-			if (listen.port < 1 || listen.port > 65535) {
-				return false;
-			}
-			return _listens.insert(listen).second;
+			port_str = value.substr(sep_pos + 1);
+		} else {
+			listen.address = "";
+			port_str = value;
 		}
 
-		return false;
+		if (!is_digits(port_str)) {
+			return false;
+		}
+
+		listen.port = std::atoi(port_str.c_str());
+		if (listen.port < 1 || listen.port > 65535) {
+			return false;
+		}
+
+		return _listens.insert(listen).second;
 	}
 
 	/* Getters */
