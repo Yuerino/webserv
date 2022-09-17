@@ -17,16 +17,16 @@ CDEBUG		=	-g -D PARSER_DEBUG
 
 RM			=	rm -f
 
-.PHONY: all clean fclean re debug run_test
+.PHONY: all clean fclean re run debug run_debug run_test
 
 $(NAME): $(OBJS) $(OBJ_DIR)/main.o
 		@$(CXX) $(CXXFLAGS) $(CXX98FLAGS) $(LDFLAGS) -o $@ $^
-		@echo "Build $(NAME) succesfully!"
+		@echo "\033[32mBuild $(NAME) succesfully!\033[0m"
 
 -include $(DEPS)
 
 $(OBJ_DIR)/%.o: %.cpp
-		@echo "Compiling $<"
+		@echo "\033[33mCompiling $<\033[0m"
 		@mkdir -p $(@D)
 		@$(CXX) $(CXXFLAGS) $(CXX98FLAGS) -MMD -o $@ -c $<
 
@@ -36,14 +36,22 @@ clean:
 		@$(RM) -r $(OBJ_DIR)
 		@$(RM) -r $(NAME).dSYM
 		@$(RM) -r $(TEST_NAME).dSYM
+		@echo "\033[32mCleaned all object and debug files\033[0m"
 
 fclean: clean
 		@$(RM) $(NAME) $(TEST_NAME)
+		@echo "\033[32mCleaned all binary files\033[0m"
 
 re: clean all
 
+run: $(NAME)
+		./$(NAME) config/default.conf
+
 debug: CXX98FLAGS += $(CDEBUG)
 debug: re
+
+run_debug: debug
+		./$(NAME) config/default.conf
 
 #=============================================================================#
 # Unit test stuff
@@ -71,16 +79,16 @@ run_test: $(TEST_NAME)
 
 $(TEST_NAME): $(OBJS) $(GTEST_OBJS) $(T_OBJS)
 		@$(CXX) $(CXXFLAGS) -pthread $(T_IFLAGS) -lpthread -o $@ $^
-		@echo "Build $(TEST_NAME) succesfully!"
+		@echo "\033[32mBuild $(TEST_NAME) succesfully!\033[0m"
 
 $(GTEST_OBJS): $(OBJ_DIR)/%.o: %.cc
-		@echo "Compiling $<"
+		@echo "\033[33mCompiling $<\033[0m"
 		@mkdir -p $(@D)
 		@$(CXX) $(CXXFLAGS) -pthread -std=c++14 $(T_IFLAGS) -o $@ -c $<
 
 $(T_OBJS): $(OBJ_DIR)/%.o: %.cpp
-		@echo "Compiling $<"
+		@echo "\033[33mCompiling $<\033[0m"
 		@mkdir -p $(@D)
-		@$(CXX) $(CXXFLAGS)  -pthread -std=c++14 $(T_IFLAGS) -o $@ -c $<
+		@$(CXX) $(CXXFLAGS) -pthread -std=c++14 $(T_IFLAGS) -o $@ -c $<
 
 #=============================================================================#

@@ -1,6 +1,8 @@
 #include "Parser.hpp"
 
 namespace webserv {
+	/* Class Parser */
+
 	Parser::Parser() : _tokenizer(), _str(), _tokens(), _scopes_and_types() {
 		/* register global scope types */
 		_scopes_and_types["global"].insert("server");
@@ -12,19 +14,20 @@ namespace webserv {
 
 	Parser::~Parser() {}
 
-	void Parser::parse(const std::string& str_to_parse) {
+	std::vector<ServerConfig> Parser::parse(const std::string& str_to_parse) {
 		_str = str_to_parse;
 
 		_tokens = _tokenizer.tokenize(_str);
-		if (_tokens.empty())
-			throw std::runtime_error("Empty configuration.");
+		if (_tokens.empty()) {
+			throw ParserException("Empty configuration");
+		}
 
 		_token_it = _tokens.begin();
 		_token_ite = _tokens.end();
 
 		std::vector<ServerConfig> server_configs;
 		while (_token_it != _token_ite) {
-			Token token = expect_type("global");
+			internal::Token token = expect_type("global");
 
 			if (token.text == "server") {
 				ServerConfig server_config;
@@ -34,37 +37,45 @@ namespace webserv {
 		}
 
 #ifdef PARSER_DEBUG
-		// /* debug */ print_tokens();
-		/* debug */ print_server_configs(server_configs);
+		/* debug */ internal::print_debug_vector(server_configs);
 #endif
+
+		return server_configs;
 	}
 
 	/**
 	 * @brief Parse server config
+	 * @exception Throw ParserException if fail to set server config
 	 */
 	ServerConfig Parser::parse_server_config() {
 		ServerConfig server_config;
 		expect_operator("{");
 
 		while (_token_it != _token_ite
-			&& (_token_it->type != OPERATOR && _token_it->text != "}")) {
-			Token token_type = expect_type("server");
+			&& (_token_it->type != internal::OPERATOR && _token_it->text != "}")) {
+			internal::Token token_type = expect_type("server");
 
 			if (token_type.text == "location") {
-				if (!server_config.add_location(parse_location_config()))
-					throw std::runtime_error(std::string("Unexpected token: " + token_type.text + " at line " + to_string(token_type.line_number)).c_str());
+				if (!server_config.add_location(parse_location_config())) {
+					throw ParserExceptionAtLine("Unexpected token: " + token_type.text, token_type.line_number);
+				}
 				continue;
 			}
 
 			while (_token_it != _token_ite
-				&& (_token_it->type != OPERATOR && _token_it->text != ";")) {
-				Token token_value = expect_value();
+				&& (_token_it->type != internal::OPERATOR && _token_it->text != ";")) {
+				internal::Token token_value = expect_value();
 
-				if (!server_config.set_config(token_type.text, token_value.text))
-					throw std::runtime_error(std::string("Unexpected token: " + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
+				if (!server_config.set_config(token_type.text, token_value.text)) {
+					throw ParserExceptionAtLine("Unexpected token: " + token_value.text, token_value.line_number);
+				}
 			}
 
 			expect_operator(";");
+		}
+
+		if (!server_config.set_default()) {
+			throw ParserExceptionAtLine("Missing default server configuration", (_token_it != _token_ite) ? _token_it->line_number : (_token_it - 1)->line_number);
 		}
 
 		expect_operator("}");
@@ -73,29 +84,36 @@ namespace webserv {
 
 	/**
 	 * @brief Parse location config
+	 * @exception Throw ParserException if fail to set location config
 	 */
 	LocationConfig Parser::parse_location_config() {
 		LocationConfig location_config;
 
-		Token token_value = expect_value();
-		if (!location_config.set_config("location", token_value.text))
-			throw std::runtime_error(std::string("Unexpected token: " + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
+		internal::Token token_value = expect_value();
+		if (!location_config.set_config("location", token_value.text)) {
+			throw ParserExceptionAtLine("Unexpected token: " + token_value.text, token_value.line_number);
+		}
 
 		expect_operator("{");
 
 		while (_token_it != _token_ite
-			&& (_token_it->type != OPERATOR && _token_it->text != "}")) {
-			Token token_type = expect_type("location");
+			&& (_token_it->type != internal::OPERATOR && _token_it->text != "}")) {
+			internal::Token token_type = expect_type("location");
 
 			while (_token_it != _token_ite
-				&& (_token_it->type != OPERATOR && _token_it->text != ";")) {
+				&& (_token_it->type != internal::OPERATOR && _token_it->text != ";")) {
 				token_value = expect_value();
 
-				if (!location_config.set_config(token_type.text, token_value.text))
-					throw std::runtime_error(std::string("Unexpected token: " + token_value.text + " at line " + to_string(token_value.line_number)).c_str());
+				if (!location_config.set_config(token_type.text, token_value.text)) {
+					throw ParserExceptionAtLine("Unexpected token: " + token_value.text, token_value.line_number);
+				}
 			}
 
 			expect_operator(";");
+		}
+
+		if (!location_config.set_default()) {
+			throw ParserExceptionAtLine("Missing default location configuration", (_token_it != _token_ite) ? _token_it->line_number : (_token_it - 1)->line_number);
 		}
 
 		expect_operator("}");
@@ -104,18 +122,18 @@ namespace webserv {
 
 	/**
 	 * @brief Expect and return operator token matched name
-	 * @exception Throw runtime_error if can't find expected opterator
+	 * @exception Throw ParserException if can't find expected opterator
 	 */
-	Token Parser::expect_operator(const std::string& name) {
+	internal::Token Parser::expect_operator(const std::string& name) {
 		if (_token_it == _token_ite) {
-			throw std::runtime_error(std::string("Unexpected end of file, expected: " + name).c_str());
+			throw ParserException("Unexpected end of file, expected: " + name);
 		}
 
-		if (_token_it->type != OPERATOR || (!name.empty() && _token_it->text != name)) {
-			throw std::runtime_error(std::string("Unexpected token: " + _token_it->text + " at line " + to_string(_token_it->line_number) + ", expected: " + name).c_str());
+		if (_token_it->type != internal::OPERATOR || (!name.empty() && _token_it->text != name)) {
+			throw ParserExceptionAtLine("Unexpected token: " + _token_it->text + ", expected: " + name, _token_it->line_number);
 		}
 
-		Token token = *_token_it;
+		internal::Token token = *_token_it;
 		++_token_it;
 
 		return token;
@@ -123,18 +141,18 @@ namespace webserv {
 
 	/**
 	 * @brief Expect and return identifier token
-	 * @exception Throw runetime_error next token isn't an itentifier token
+	 * @exception Throw ParserException next token isn't an itentifier token
 	 */
-	Token Parser::expect_value() {
+	internal::Token Parser::expect_value() {
 		if (_token_it == _token_ite) {
-			throw std::runtime_error("Unexpected end of file");
+			throw ParserException("Unexpected end of file");
 		}
 
-		if (_token_it->type != IDENTIFIER) {
-			throw std::runtime_error(std::string("Unexpected token: " + _token_it->text + " at line " + to_string(_token_it->line_number)).c_str());
+		if (_token_it->type != internal::IDENTIFIER) {
+			throw ParserExceptionAtLine("Unexpected token: " + _token_it->text, _token_it->line_number);
 		}
 
-		Token token = *_token_it;
+		internal::Token token = *_token_it;
 		++_token_it;
 
 		return token;
@@ -142,100 +160,38 @@ namespace webserv {
 
 	/**
 	 * @brief Expect and return identifier token that matched types within scope
-	 * @exception Throw runtime_error if can't find expected type within scope
+	 * @exception Throw ParserException if can't find expected type within scope
 	 */
-	Token Parser::expect_type(const std::string& scope) {
+	internal::Token Parser::expect_type(const std::string& scope) {
 		if (_token_it == _token_ite) {
-			throw std::runtime_error("Unexpected end of file");
+			throw ParserException("Unexpected end of file");
 		}
 
-		if (_token_it->type != IDENTIFIER) {
-			throw std::runtime_error(std::string("Unexpected token: " + _token_it->text + " at line " + to_string(_token_it->line_number) + " in scope " + scope).c_str());
+		if (_token_it->type != internal::IDENTIFIER) {
+			throw ParserExceptionAtLine("Unexpected token: " + _token_it->text + " in " + scope + " scope", _token_it->line_number);
 		}
 
 		std::map<std::string, std::set<std::string> >::iterator foundScope = _scopes_and_types.find(scope);
 		if (foundScope == _scopes_and_types.end()) {
-			throw std::runtime_error(std::string("Unexpected scope at line " + to_string(_token_it->line_number) + ", expected: " + scope).c_str());
+			throw ParserExceptionAtLine("Unexpected scope: " + scope, _token_it->line_number);
 		}
 
 		std::set<std::string>::iterator foundType = foundScope->second.find(_token_it->text);
 		if (foundType == foundScope->second.end()) {
-			throw std::runtime_error(std::string("Unexpected type: " + _token_it->text + " at line " + to_string(_token_it->line_number) + " in scope " + scope).c_str());
+			throw ParserExceptionAtLine("Unexpected type: " + _token_it->text + " in " + scope + " scope", _token_it->line_number);
 		}
 
-		Token token = *_token_it;
+		internal::Token token = *_token_it;
 		++_token_it;
 
 		return token;
 	}
 
-#ifdef PARSER_DEBUG
-	/**
-	 * @brief Debug function to print all tokens
-	 */
-	void Parser::print_tokens() const {
-		std::vector<Token>::const_iterator it = _tokens.begin();
-		std::vector<Token>::const_iterator ite = _tokens.end();
+	/* Class ParserException */
 
-		for (; it != ite; ++it) {
-			std::cout << "Token(" << TokenTypeString[it->type] << "): \"" << it->text << "\" at line: ";
-			std::cout << it->line_number << "." << std::endl;
-		}
-	}
+	ParserException::ParserException(std::string message) throw() : std::invalid_argument(message) {}
 
-	/**
-	 * @brief Debug function to print all server_configs
-	 */
-	void Parser::print_server_configs(const std::vector<ServerConfig>& server_configs) {
-		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
-		std::vector<ServerConfig>::const_iterator ite = server_configs.end();
+	ParserExceptionAtLine::ParserExceptionAtLine(std::string message, size_t line) throw() : ParserException(message), _line(line) {}
 
-		for (; it != ite; ++it) {
-			std::cout << "Server config: { ";
-			std::cout << "server_name [ ";
-			for (std::vector<std::string>::const_iterator _it = it->get_server_names().begin();
-				_it != it->get_server_names().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], listen [ ";
-			for (std::vector<std::string>::const_iterator _it = it->get_listens().begin();
-				_it != it->get_listens().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], root ";
-			std::cout << it->get_root();
-			std::cout << ", index ";
-			std::cout << it->get_index();
-			std::cout << ", allow_methods [ ";
-			for (std::set<std::string>::const_iterator _it = it->get_allow_methods().begin();
-				_it != it->get_allow_methods().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], location [ ";
-			Parser::print_location_configs(it->get_locations());
-			std::cout << "] }" << std::endl;
-		}
-	}
-
-	/**
-	 * @brief Debug function to print all location_configs
-	 */
-	void Parser::print_location_configs(const std::map<std::string, LocationConfig>& location_configs) {
-		std::map<std::string, LocationConfig>::const_iterator it = location_configs.begin();
-		std::map<std::string, LocationConfig>::const_iterator ite = location_configs.end();
-
-		for (; it != ite; ++it) {
-			std::cout << "location ";
-			std::cout << it->first << " { ";
-			std::cout << "root ";
-			std::cout << it->second.get_root();
-			std::cout << ", index ";
-			std::cout << it->second.get_index();
-			std::cout << ", allow_methods [ ";
-			for (std::set<std::string>::const_iterator _it = it->second.get_allow_methods().begin();
-				_it != it->second.get_allow_methods().end(); ++_it)
-				std::cout << *_it << " ";
-			std::cout << "], cgi_path ";
-			std::cout << it->second.get_cgi_path();
-			std::cout << " }" << std::endl;
-		}
-	}
-#endif
+	const size_t& ParserExceptionAtLine::get_line() const throw() { return _line; }
 } /* namespace webserv */

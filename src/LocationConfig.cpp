@@ -44,19 +44,69 @@ namespace webserv {
 	 * @return True if successfully set the value, otherwise false
 	 */
 	bool LocationConfig::set_config(const std::string& type, const std::string& value) {
-		if (type == "location" && _location.empty())
+		if (type == "location" && _location.empty()) {
 			_location = value;
-		else if (type == "root" && _root.empty())
+		} else if (type == "root" && _root.empty()) {
 			_root = value;
-		else if (type == "index" && _index.empty())
+		} else if (type == "index" && _index.empty()) {
 			_index = value;
-		else if (type == "allow_methods")
-			return _allow_methods.insert(value).second;
-		else if (type == "cgi_path" && _cgi_path.empty())
+		} else if (type == "allow_methods") {
+			return add_allow_methods(value);
+		} else if (type == "cgi_path" && _cgi_path.empty()) {
 			_cgi_path = value;
-		else
+		} else {
 			return false;
+		}
+
 		return true;
+	}
+
+	/**
+	 * @brief Set the rest of unset configuration to default value
+	 * @return true if succesfully set otherwise false
+	 */
+	bool LocationConfig::set_default() {
+		if (_location.empty()) {
+			return false;
+		}
+
+		if (_root.empty()) {
+			_root = "html";
+		}
+
+		if (_index.empty()) {
+			_index = "index.html";
+		}
+
+		if (_allow_methods.empty()) {
+			size_t i = 0;
+			size_t size = sizeof(HTTPMethodStrings) / sizeof(const char*);
+
+			for (; i < size; ++i) {
+				_allow_methods.insert(HTTPMethodStrings[i]);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * @brief Check if method is valid and add method to allow_methods
+	 */
+	bool LocationConfig::add_allow_methods(const std::string& method) {
+		size_t i = 0;
+		size_t size = sizeof(HTTPMethodStrings) / sizeof(const char*);
+
+		for (; i < size; ++i) {
+			if (method == HTTPMethodStrings[i])
+				break;
+		}
+
+		if (i >= size) {
+			return false;
+		}
+
+		return _allow_methods.insert(method).second;
 	}
 
 	/* Getters */
@@ -65,4 +115,25 @@ namespace webserv {
 	const std::string& LocationConfig::get_index() const { return _index; }
 	const std::set<std::string>& LocationConfig::get_allow_methods() const { return _allow_methods; }
 	const std::string& LocationConfig::get_cgi_path() const { return _cgi_path; }
+
+#ifdef PARSER_DEBUG
+	std::ostream& operator<<(std::ostream& os, const LocationConfig& location_config) {
+		os << "\tlocation " << location_config.get_location() << " {\n";
+
+		os << "\t\troot " << location_config.get_root() << ";\n";
+		os << "\t\tindex " << location_config.get_index() << ";\n";
+
+		os << "\t\tallow_methods";
+		for (std::set<std::string>::const_iterator _it = location_config.get_allow_methods().begin();
+			_it != location_config.get_allow_methods().end(); ++_it)
+			os << " " << *_it;
+		os << ";\n";
+
+		os << "\t\tcgi_path " << location_config.get_cgi_path() << ";\n";
+
+		os << "\t}\n";
+		return os;
+	}
+#endif
+
 } /* namespace webserv */
