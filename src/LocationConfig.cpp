@@ -71,7 +71,7 @@ namespace webserv {
 		}
 
 		if (_root.empty()) {
-			_root = "http";
+			_root = "html";
 		}
 
 		if (_index.empty()) {

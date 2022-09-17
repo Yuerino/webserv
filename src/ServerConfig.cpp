@@ -90,6 +90,10 @@ namespace webserv {
 	 * @return true if succesfully set otherwise false
 	 */
 	bool ServerConfig::set_default() {
+		if (_server_names.empty()) {
+			_server_names.insert("");
+		}
+
 		if (_listens.empty()) {
 			Listen listen;
 			listen.address = "";
@@ -99,7 +103,7 @@ namespace webserv {
 		}
 
 		if (_root.empty()) {
-			_root = "http";
+			_root = "html";
 		}
 
 		if (_index.empty()) {
