@@ -45,4 +45,11 @@ namespace webserv {
 
 		return true;
 	}
+
+	/**
+	 * @brief Check if string only contains number
+	 */
+	bool is_digits(const std::string& str) {
+		return str.find_first_not_of("0123456789") == std::string::npos;
+	}
 } /* namespace webserv */
