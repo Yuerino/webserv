@@ -1,6 +1,18 @@
 #include "ServerConfig.hpp"
 
 namespace webserv {
+	/* Struct Listen */
+
+	bool Listen::operator<(const Listen& other) const {
+		if (address == other.address) {
+			return port < other.port;
+		}
+
+		return address < other.address;
+	}
+
+	/* Class ServerConfig */
+
 	ServerConfig::ServerConfig() :
 		_server_names(),
 		_listens(),
@@ -51,7 +63,7 @@ namespace webserv {
 		if (type == "server_name") {
 			return _server_names.insert(value).second;
 		} else if (type == "listen") {
-			return _listens.insert(value).second;
+			return add_listen(value);
 		} else if (type == "root" && _root.empty()) {
 			_root = value;
 		} else if (type == "index" && _index.empty()) {
@@ -79,7 +91,11 @@ namespace webserv {
 	 */
 	bool ServerConfig::set_default() {
 		if (_listens.empty()) {
-			_listens.insert("80");
+			Listen listen;
+			listen.address = "";
+			listen.port = 80;
+
+			_listens.insert(listen);
 		}
 
 		if (_root.empty()) {
@@ -125,9 +141,59 @@ namespace webserv {
 		return _allow_methods.insert(method).second;
 	}
 
+	/**
+	 * @brief Check and add (address:port) to listen
+	 */
+	bool ServerConfig::add_listen(const std::string& value) {
+		Listen listen;
+		size_t sep_pos;
+
+		sep_pos = value.find(":");
+
+		if (sep_pos == std::string::npos) {
+			if (!is_digits(value)) {
+				return false;
+			}
+
+			listen.port = std::atoi(value.c_str());
+			if (listen.port < 1 || listen.port > 65535) {
+				return false;
+			}
+
+			listen.address = "";
+			return _listens.insert(listen).second;
+		} else {
+			int r;
+			unsigned char buffer[sizeof(in_addr)];
+
+			listen.address = value.substr(0, sep_pos);
+
+			r = inet_pton(AF_INET, listen.address.c_str(), buffer);
+			if (r == 0) {
+				return false;
+			} else if (r < 0) {
+				LOG_E() << "Fatal error: inet_pton: " << std::strerror(errno) << "\n";
+				exit(EXIT_FAILURE);
+			}
+
+			std::string port_str = value.substr(sep_pos + 1);
+			if (!is_digits(port_str)) {
+				return false;
+			}
+
+			listen.port = std::atoi(port_str.c_str());
+			if (listen.port < 1 || listen.port > 65535) {
+				return false;
+			}
+			return _listens.insert(listen).second;
+		}
+
+		return false;
+	}
+
 	/* Getters */
 	const std::set<std::string>& ServerConfig::get_server_names() const { return _server_names; }
-	const std::set<std::string>& ServerConfig::get_listens() const { return _listens; }
+	const std::set<Listen>& ServerConfig::get_listens() const { return _listens; }
 	const std::string& ServerConfig::get_root() const { return _root; }
 	const std::string& ServerConfig::get_index() const { return _index; }
 	const std::set<std::string>& ServerConfig::get_allow_methods() const { return _allow_methods; }
@@ -144,9 +210,9 @@ namespace webserv {
 		os << ";\n";
 
 		os << "\tlisten";
-		for (std::set<std::string>::const_iterator _it = server_config.get_listens().begin();
+		for (std::set<Listen>::const_iterator _it = server_config.get_listens().begin();
 			_it != server_config.get_listens().end(); ++_it)
-			os << " " << *_it;
+			os << " " << _it->address << ":" << _it->port;
 		os << ";\n";
 
 		os << "\troot " << server_config.get_root() << ";\n";

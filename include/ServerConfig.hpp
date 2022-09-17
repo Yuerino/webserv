@@ -4,10 +4,23 @@
 #include <string>
 #include <set>
 #include <map>
+#include <cstdlib>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <cerrno>
+#include <cstring>
 
 #include "LocationConfig.hpp"
 
 namespace webserv {
+	struct Listen {
+		std::string	address;
+		int			port;
+
+		bool operator<(const Listen& other) const;
+	};
+
 	class ServerConfig {
 	public:
 		ServerConfig();
@@ -22,7 +35,7 @@ namespace webserv {
 
 		/* Getters */
 		const std::set<std::string>& get_server_names() const;
-		const std::set<std::string>& get_listens() const;
+		const std::set<Listen>& get_listens() const;
 		const std::string& get_root() const;
 		const std::string& get_index() const;
 		const std::set<std::string>& get_allow_methods() const;
@@ -30,13 +43,14 @@ namespace webserv {
 
 	private:
 		std::set<std::string>					_server_names;
-		std::set<std::string>					_listens;
+		std::set<Listen>						_listens;
 		std::string								_root;
 		std::string								_index;
 		std::set<std::string>					_allow_methods;
 		std::map<std::string, LocationConfig>	_locations;
 
 		bool add_allow_methods(const std::string& method);
+		bool add_listen(const std::string& value);
 	};
 
 #ifdef PARSER_DEBUG
