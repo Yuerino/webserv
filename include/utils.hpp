@@ -6,6 +6,11 @@
 #include <fstream>
 #include <stdexcept>
 #include <ctime>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <cerrno>
+#include <cstring>
 
 #define RED "\033[31m"
 #define GREEN "\033[32m"
@@ -55,4 +60,6 @@ namespace webserv {
 	bool is_valid_extension(const std::string& file, const std::string& extension);
 
 	bool is_digits(const std::string& str);
+
+	bool is_ip4(const std::string& ip4);
 } /* namespace webserv */

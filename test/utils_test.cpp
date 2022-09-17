@@ -29,4 +29,11 @@ TEST(UtilsTest, IsDigitsTest) {
 	EXPECT_FALSE(is_digits("42.5f"));
 };
 
+TEST(UtilsTest, IsIP4Test) {
+	EXPECT_TRUE(is_ip4("0.0.0.0"));
+	EXPECT_TRUE(is_ip4("192.168.0.1"));
+	EXPECT_FALSE(is_ip4("42abc"));
+	EXPECT_FALSE(is_ip4("0.257.0.0"));
+};
+
 }} /* namespace webserv::internal */

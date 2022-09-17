@@ -59,4 +59,23 @@ namespace webserv {
 
 		return str_to_check.find_first_not_of("0123456789") == std::string::npos;
 	}
+
+	/**
+	 * @brief Check if ip4 string is valid
+	 * @note In case of fatal error which should never happen, program will exit
+	 */
+	bool is_ip4(const std::string& ip4) {
+		int r;
+		unsigned char buffer[sizeof(in_addr)];
+
+		r = inet_pton(AF_INET, ip4.c_str(), buffer);
+		if (r == 0) {
+			return false;
+		} else if (r < 0) {
+			LOG_E() << "Fatal error: inet_pton: " << std::strerror(errno) << "\n";
+			std::exit(EXIT_FAILURE);
+		}
+
+		return true;
+	}
 } /* namespace webserv */
