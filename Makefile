@@ -17,7 +17,7 @@ CDEBUG		=	-g -D PARSER_DEBUG
 
 RM			=	rm -f
 
-.PHONY: all clean fclean re debug run_test
+.PHONY: all clean fclean re run debug run_debug run_test
 
 $(NAME): $(OBJS) $(OBJ_DIR)/main.o
 		@$(CXX) $(CXXFLAGS) $(CXX98FLAGS) $(LDFLAGS) -o $@ $^
@@ -44,8 +44,14 @@ fclean: clean
 
 re: clean all
 
+run: $(NAME)
+		./$(NAME) config/default.conf
+
 debug: CXX98FLAGS += $(CDEBUG)
 debug: re
+
+run_debug: debug
+		./$(NAME) config/default.conf
 
 #=============================================================================#
 # Unit test stuff
