@@ -37,7 +37,7 @@ namespace webserv {
 	/**
 	 * @brief Check if file has correct extension
 	 */
-	bool is_valid_extension(const std::string& file, const std::string& extension) {
+	bool is_extension(const std::string& file, const std::string& extension) {
 		size_t ext_pos = file.rfind('.');
 
 		if (ext_pos == std::string::npos || file.substr(ext_pos) != extension)

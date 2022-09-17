@@ -17,9 +17,9 @@ TEST(UtilsTest, FileToStringTest) {
 };
 
 TEST(UtilsTest, IsValidExtensionTest) {
-	EXPECT_TRUE(is_valid_extension("test/config/parser_test_1.conf", ".conf"));
-	EXPECT_TRUE(is_valid_extension("utils_test.cpp", ".cpp"));
-	EXPECT_FALSE(is_valid_extension("utils_test.cpp", ".conf"));
+	EXPECT_TRUE(is_extension("test/config/parser_test_1.conf", ".conf"));
+	EXPECT_TRUE(is_extension("utils_test.cpp", ".cpp"));
+	EXPECT_FALSE(is_extension("utils_test.cpp", ".conf"));
 };
 
 TEST(UtilsTest, IsDigitsTest) {

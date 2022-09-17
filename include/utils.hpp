@@ -57,7 +57,7 @@ namespace webserv {
 
 	std::string get_current_time(const char* format);
 
-	bool is_valid_extension(const std::string& file, const std::string& extension);
+	bool is_extension(const std::string& file, const std::string& extension);
 
 	bool is_digits(const std::string& str);
 
