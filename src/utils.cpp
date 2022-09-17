@@ -48,8 +48,15 @@ namespace webserv {
 
 	/**
 	 * @brief Check if string only contains number
+	 * @note Doesn't check for decimal number
 	 */
 	bool is_digits(const std::string& str) {
-		return str.find_first_not_of("0123456789") == std::string::npos;
+		std::string str_to_check = str;
+
+		if (str.size() != 1 && str[0] == '-') {
+			str_to_check = str.substr(1);
+		}
+
+		return str_to_check.find_first_not_of("0123456789") == std::string::npos;
 	}
 } /* namespace webserv */
