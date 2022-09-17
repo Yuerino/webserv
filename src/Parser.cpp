@@ -14,7 +14,7 @@ namespace webserv {
 
 	Parser::~Parser() {}
 
-	void Parser::parse(const std::string& str_to_parse) {
+	std::vector<ServerConfig> Parser::parse(const std::string& str_to_parse) {
 		_str = str_to_parse;
 
 		_tokens = _tokenizer.tokenize(_str);
@@ -39,6 +39,8 @@ namespace webserv {
 #ifdef PARSER_DEBUG
 		/* debug */ internal::print_debug_vector(server_configs);
 #endif
+
+		return server_configs;
 	}
 
 	/**

@@ -18,7 +18,7 @@ namespace webserv {
 		Parser();
 		~Parser();
 
-		void parse(const std::string& str_to_parse);
+		std::vector<ServerConfig> parse(const std::string& str_to_parse);
 
 	private:
 		ServerConfig parse_server_config();
