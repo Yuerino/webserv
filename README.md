@@ -1,6 +1,8 @@
 # Webserv
 
-A basic HTTP/1.1 server implemented in C++.
+![master](https://github.com/Yuerino/webserv/actions/workflows/unit_test-ci.yml/badge.svg)
+
+A basic HTTP/1.1 server implemented in C++98.
 
 ## Installation
 
