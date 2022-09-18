@@ -78,4 +78,56 @@ namespace webserv {
 
 		return true;
 	}
+
+	/**
+	 * @brief Check string for wildcard pattern with delimiter to reset matching
+	 * @example In case of checking for path, delimiter will be '/'
+	 * @note Leetcode problem 44. if you're interested
+	 */
+	bool is_match(std::string str, std::string pattern, char delimiter) {
+		size_t str_len = str.size();
+		size_t pattern_len = pattern.size();
+		size_t str_i = 0;
+		size_t pattern_i = 0;
+		size_t backtrack_str_i = 0;
+		size_t backtrack_pattern_i = pattern_len;
+
+		while (str_i < str_len) {
+			/* advance both index, pattern index will never advance pass end */
+			if (str[str_i] == pattern[pattern_i]) {
+				/* if found delimiter then reset wildcard matching */
+				if (pattern[pattern_i] == delimiter) {
+					backtrack_pattern_i = pattern_len;
+				}
+				++str_i;
+				++pattern_i;
+				continue;
+			}
+
+			/* found '*', track index '*' and current index in str for possible backtrack later*/
+			if (pattern[pattern_i] == '*') {
+				backtrack_pattern_i = pattern_i;
+				backtrack_str_i = str_i;
+				++pattern_i;
+				continue;
+			}
+
+			/* current char doesn't match, last pattern char was '*' but current pattern char isn't '*'
+			 * then we start backtracking */
+			if (backtrack_pattern_i < pattern_len) {
+				pattern_i = backtrack_pattern_i + 1;
+				str_i = ++backtrack_str_i;
+				continue;
+			}
+
+			return false;
+		}
+
+		/* check for remaining '*' in pattern */
+		while (pattern[pattern_i] == '*') {
+			++pattern_i;
+		}
+
+		return pattern_i == pattern_len;
+	}
 } /* namespace webserv */

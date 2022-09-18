@@ -36,4 +36,17 @@ TEST(UtilsTest, IsIP4Test) {
 	EXPECT_FALSE(is_ip4("0.257.0.0"));
 };
 
+TEST(UtilsTest, IsMatchTest) {
+	EXPECT_TRUE(is_match("abc.conf", "*.conf", '/'));
+	EXPECT_TRUE(is_match("/abc.conf", "/*.conf", '/'));
+	EXPECT_TRUE(is_match("test/abc.conf", "*/*.conf", '/'));
+	EXPECT_TRUE(is_match("/test/abc.conf", "/*/*.conf", '/'));
+
+	EXPECT_FALSE(is_match("/test/abc.con", "/*/*.conf", '/'));
+	EXPECT_FALSE(is_match("/abc.con", "/*/*.conf", '/'));
+
+	EXPECT_TRUE(is_match("test.com", "*.com", '.'));
+	EXPECT_TRUE(is_match("abc.test.com", "*.test.com", '.'));
+};
+
 }} /* namespace webserv::internal */

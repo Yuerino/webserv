@@ -62,4 +62,6 @@ namespace webserv {
 	bool is_digits(const std::string& str);
 
 	bool is_ip4(const std::string& ip4);
+
+	bool is_match(std::string str, std::string pattern, char delimiter);
 } /* namespace webserv */
