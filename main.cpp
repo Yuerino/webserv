@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
-	if (!webserv::is_valid_extension(argv[1], ".conf")) {
+	if (!webserv::is_extension(argv[1], ".conf")) {
 		LOG_E() << "Invalid configuration file extension.\n";
 		return EXIT_FAILURE;
 	}
