@@ -3,6 +3,10 @@
 namespace webserv {
 	/* Struct Listen */
 
+	std::string Listen::get_full_address() const {
+		return address + ":" + to_string(port);
+	}
+
 	bool Listen::operator<(const Listen& other) const {
 		if (address == other.address) {
 			return port < other.port;
