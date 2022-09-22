@@ -64,4 +64,11 @@ namespace webserv {
 	bool is_ip4(const std::string& ip4);
 
 	bool is_match(std::string str, std::string pattern, char delimiter);
+
+	/**
+	 * @brief Designed to extract specific sequences of characters from a string divided in lines and separated by spaces.
+	 * In case the use reflects the design purposes, del1 is going to be '\\n' and del2 is going to be ' ', 
+	 * while occurrence1 will be the NEWLINE index and occurrence2 will be the SPACE index (pointing at what is before the character).
+	 */
+	std::string sub_substr(std::string src, char del1, char del2, uint32_t occurrence1, uint32_t occurrence2);
 } /* namespace webserv */
