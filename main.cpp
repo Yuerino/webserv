@@ -8,6 +8,7 @@
 
 #include "utils.hpp"
 #include "Parser.hpp"
+#include "Server.hpp"
 
 int main(int argc, char **argv) {
 	LOG_FILE("webserv.log");
@@ -24,7 +25,9 @@ int main(int argc, char **argv) {
 
 	webserv::Parser parser;
 	try {
-		parser.parse(webserv::file_to_string(argv[1]));
+		webserv::Server server(parser.parse(webserv::file_to_string(argv[1])));
+		server.init();
+		server.run();
 	} catch (const webserv::ParserExceptionAtLine& e) {
 		LOG_E() << "[" << argv[1] << ":" << e.get_line() << "] " << e.what() << "\n";
 		return EXIT_FAILURE;
