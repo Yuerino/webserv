@@ -4,12 +4,16 @@
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
+#include <stdexcept>
+#include "utils.hpp"
+
+#ifdef __APPLE__
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
-#include <stdexcept>
-
-#include "utils.hpp"
+#elif __linux__
+#include <sys/epoll.h>
+#endif
 
 namespace webserv {
 	namespace internal {
@@ -31,8 +35,13 @@ namespace webserv {
 			/* Getters */
 			const int& get_poll_fd() const;
 		private:
-			int 			_poll_fd;
-			struct kevent	_event_list[100];
+			int 				_poll_fd;
+
+#ifdef __APPLE__
+			struct kevent		_event_list[100];
+#elif __linux__
+			struct epoll_event	_event_list[100];
+#endif
 
 			IOHandler(const IOHandler& copy); /* disabled */
 			IOHandler& operator=(const IOHandler& other); /* disabled */
