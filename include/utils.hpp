@@ -28,6 +28,8 @@
 
 #define LOG(log_level) webserv::internal::Logger::get_instance() += webserv::internal::LogData(log_level, __FILE__, __LINE__)
 
+#define LOG_FILE(path) webserv::internal::Logger::set_log_file(path)
+
 namespace webserv {
 	/* Temporary put it here until we work on HTTP stuff */
 	static const char* const HTTPMethodStrings[] = {

@@ -11,7 +11,7 @@ namespace webserv {
 
 		std::ifstream infile(file_path.c_str(), std::ios::in | std::ios::ate);
 		if (!infile.is_open()) {
-			throw std::runtime_error(std::string("File " + file_path + " can't be opened").c_str());
+			throw std::runtime_error("File " + file_path + " can't be opened");
 		}
 
 		str.resize(infile.tellg());

@@ -13,6 +13,7 @@ namespace webserv {
 		std::string	address;
 		int			port;
 
+		std::string get_full_address() const;
 		bool operator<(const Listen& other) const;
 	};
 
