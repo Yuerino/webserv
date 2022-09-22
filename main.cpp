@@ -10,6 +10,8 @@
 #include "Parser.hpp"
 
 int main(int argc, char **argv) {
+	LOG_FILE("webserv.log");
+
 	if (argc != 2) {
 		LOG_E() << "Invalid number of arguments. Usage: ./webserv [ config file ]\n";
 		return EXIT_FAILURE;

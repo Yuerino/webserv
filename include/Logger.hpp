@@ -1,7 +1,9 @@
 #pragma once
 
+#include <string>
 #include <iostream>
 #include <sstream>
+#include <unistd.h>
 
 #include "utils.hpp"
 
@@ -57,12 +59,15 @@ namespace webserv {
 		 */
 		class Logger {
 		public:
-			static Logger& get_instance();
-
 			void log(const LogData& log_data);
 			void operator+=(const LogData& log_data);
 
+			static Logger& get_instance();
+			static void set_log_file(const std::string& path);
+
 		private:
+			std::ofstream _log_fs;
+
 			Logger();
 			~Logger();
 
