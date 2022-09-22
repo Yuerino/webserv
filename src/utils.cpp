@@ -130,17 +130,4 @@ namespace webserv {
 
 		return pattern_i == pattern_len;
 	}
-
-	std::string sub_substr(std::string src, char del1, char del2, uint32_t occurrence1, uint32_t occurrence2)
-	{
-		uint32_t	line_pos{0};
-		uint32_t	word_pos{0};
-
-		while (occurrence1-- > 0)
-			line_pos = src.find(std::string(1, del1), line_pos);
-		std::string	line = src.substr(line_pos, src.find(std::string(1, del1), line_pos));
-		while (occurrence2-- > 0)
-			word_pos = line.find(std::string(1, del2), word_pos);
-		return (line.substr(word_pos, line.find(std::string(1, del2), word_pos)));
-	}
 } /* namespace webserv */

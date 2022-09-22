@@ -22,10 +22,18 @@
 
 namespace webserv
 {
+	enum requests
+	{
+		GET,
+		POST,
+		DELETE,
+		UNKNOWN
+	};
+
 	class Request
 	{
 		private:
-			std::string	const			_method;
+			int							_method;
 			std::string	const			_path;
 			std::string const			_scheme;
 			std::string	const			_host;
@@ -36,11 +44,15 @@ namespace webserv
 			Request(Request const &other);
 			~Request();
 
-			std::string const			&get_method(void) const;
+			int							get_method(void) const;
 			std::string const			&get_path(void) const;
 			std::string const			&get_scheme(void) const;
 			std::string const			&get_host(void) const;
 			struct sockaddr_in const	&get_client(void) const;
+
+			int							parse_method(std::string const &src);
+			std::string	const			parse_path(std::string const &src);
+			std::string	const			parse_field(std::string const &src, std::string const &fieldName);
 	};
 }
 

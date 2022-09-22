@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Request.hpp"
 
 namespace webserv {
 	Server::Server(const std::vector<ServerConfig>& server_configs) : _server_configs(server_configs), _iohandler() {
@@ -106,6 +107,7 @@ namespace webserv {
 						LOG_I() << "Accepted a connection\n";
 						_iohandler.add_fd(client_fd);
 					}
+					// map<client fd, Client object>
 				} else if (_iohandler.is_read_ready(i)) {
 					char buffer[2048];
 					ssize_t bytesRead = recv(triggered_fd, buffer, 2048, 0);
@@ -117,6 +119,12 @@ namespace webserv {
 						buffer[bytesRead] = '\0';
 						LOG_I() << "Received a message from connection: " << buffer << "\n";
 						_iohandler.set_write_ready(triggered_fd);
+						struct sockaddr_in	client;
+						Request req(std::string(buffer), client);
+						LOG_I() << req.get_method() << "\n";
+						LOG_I() << req.get_path() << "\n";
+						LOG_I() << req.get_scheme() << "\n";
+						LOG_I() << req.get_host() << "\n";
 					}
 				} else if (_iohandler.is_write_ready(i)) {
 					std::string response_header =	"HTTP/1.1 200 OK\r\n"
