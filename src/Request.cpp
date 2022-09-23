@@ -7,16 +7,19 @@ namespace webserv
 		_method(parse_method(request)),
 		_path(parse_path(request)),
 		_scheme("http"),
-		_host(parse_field(request, "Host")),
-		_client(clientAddr)
-	{}
+		_client(clientAddr),
+		_bytes_to_read(0)
+	{
+		assign_content(request);
+	}
 
 	Request::Request(Request const &other) :
 		_method(other._method),
 		_path(other._path),
 		_scheme("http"),
-		_host(other._host),
-		_client(other._client)
+		_client(other._client),
+		_content(other._content),
+		_bytes_to_read(0)
 	{}
 
 	Request::~Request()
@@ -37,14 +40,19 @@ namespace webserv
 		return (_scheme);
 	}
 
-	std::string const	&Request::get_host(void) const
-	{
-		return (_host);
-	}
-
 	struct sockaddr_in const &Request::get_client(void) const
 	{
 		return (_client);
+	}
+
+	unsigned long const	&Request::get_bytes_to_read(void) const
+	{
+		return (_bytes_to_read);
+	}
+
+	std::map<std::string, std::string> const	&Request::get_content(void) const
+	{
+		return (_content);
 	}
 
 	int					Request::parse_method(std::string const &src)
@@ -52,14 +60,10 @@ namespace webserv
 		try
 		{
 			std::string res(src.substr(0, src.find(" ")));
-			if (res == "GET")
-				return GET;
-			else if (res == "POST")
-				return POST;
-			else if (res == "DELETE")
-				return DELETE;
-			else
-				return UNKNOWN;
+			int	i(0);
+			while (res != HTTPMethodStrings[i] && i < 8)
+				i++;
+			return i;
 		}
 		catch (const std::exception& e)
 		{
@@ -93,5 +97,34 @@ namespace webserv
 		{
 			return ("");
 		}
+	}
+
+	void					Request::assign_content(std::string const &src)
+	{
+		size_t	pos(0);
+		pos = src.find("\r\n", 0);
+		while (pos != std::string::npos)
+		{
+			pos += 2;
+			if (src.find(":", pos) == std::string::npos)
+				break;
+			std::string key = src.substr(pos, src.find(":", pos) - pos);
+			_content[key] = parse_field(src, key);
+			pos = src.find("\r\n", pos);
+		}
+	}
+
+	void				Request::set_bytes_to_read(void)
+	{
+		if (!_bytes_to_read && _content.find("Content-Length") != _content.end())
+			_bytes_to_read = std::atol(_content["Content-Length"].c_str());
+	}
+
+	void				Request::mod_bytes_to_read(int mod)
+	{
+		if ((unsigned long)mod > _bytes_to_read)
+			_bytes_to_read = 0;
+		else
+			_bytes_to_read -= mod;
 	}
 }

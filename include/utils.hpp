@@ -31,18 +31,6 @@
 #define LOG_FILE(path) webserv::internal::Logger::set_log_file(path)
 
 namespace webserv {
-	/* Temporary put it here until we work on HTTP stuff */
-	static const char* const HTTPMethodStrings[] = {
-		"GET",
-		"HEAD",
-		"POST",
-		"PUT",
-		"DELETE",
-		"CONNECT",
-		"OPTIONS",
-		"TRACE"
-	};
-
 	/**
 	 * @brief Convert T type to string
 	 * @note Only if T type has operator<< overloaded

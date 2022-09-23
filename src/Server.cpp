@@ -95,10 +95,16 @@ namespace webserv {
 						_socket_fds.erase(triggered_fd);
 					}
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				} else if (_iohandler.is_eof(i)) {
 					LOG_I() << "Client fd: " << triggered_fd << " left server.\n";
 					_iohandler.remove_fd(triggered_fd);
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				} else if (_socket_fds.find(triggered_fd) != _socket_fds.end()) {
 					int client_fd = accept(triggered_fd, NULL, NULL);
 					if (client_fd == -1) {
@@ -106,6 +112,8 @@ namespace webserv {
 					} else {
 						LOG_I() << "Accepted a connection\n";
 						_iohandler.add_fd(client_fd);
+						if (_clients.find(client_fd) == _clients.end())
+							_clients[client_fd] = NULL;
 					}
 					// map<client fd, Client object>
 				} else if (_iohandler.is_read_ready(i)) {
@@ -115,31 +123,46 @@ namespace webserv {
 						LOG_E() << "Failed to read data.\n";
 						_iohandler.remove_fd(triggered_fd);
 						close(triggered_fd);
+						if (_clients.find(triggered_fd)->second != NULL)
+							delete _clients.find(triggered_fd)->second;
+						_clients.erase(triggered_fd);
 					} else {
 						buffer[bytesRead] = '\0';
+						
 						LOG_I() << "Received a message from connection: " << buffer << "\n";
-						_iohandler.set_write_ready(triggered_fd);
+
 						struct sockaddr_in	client;
-						Request req(std::string(buffer), client);
+				
+						if (_clients.find(triggered_fd)->second == NULL)
+							_clients.find(triggered_fd)->second = new Request(std::string(buffer), client);
+
+						Request& req = *_clients.find(triggered_fd)->second;
+						req.set_bytes_to_read();
+						if (req.get_bytes_to_read())
+							req.mod_bytes_to_read(bytesRead);
+
 						LOG_I() << req.get_method() << "\n";
 						LOG_I() << req.get_path() << "\n";
 						LOG_I() << req.get_scheme() << "\n";
-						LOG_I() << req.get_host() << "\n";
-					}
+						if (!req.get_bytes_to_read())
+							_iohandler.set_write_ready(triggered_fd);
+						}
 				} else if (_iohandler.is_write_ready(i)) {
+					std::string html_page = file_to_string("test/pages/post.html");
 					std::string response_header =	"HTTP/1.1 200 OK\r\n"
 													"Date: Mon, 01 Jul 2022 12:12:12 GMT\r\n"
 													"Server: webserv\r\n"
-													"Content-Length: 88\r\n"
+													"Set-Cookie: random-test=ThisIsTheTest\r\n"
+													"Content-Length: " + std::to_string(html_page.size()) + "\r\n"
 													"Content-Type: text/html\r\n"
-													"Connection: close\r\n\r\n"
+													"Connection: close\r\n\r\n";/*
 													"<html>\n"
 													"<body>\n"
 													"<h1>Hello, World!</h1>\n"
 													"</body>\n"
-													"</html>";
-
-					int ret = send(triggered_fd, response_header.c_str(), response_header.size(), 0);
+													"</html>";*/
+					std::string response = response_header.append(html_page);
+					int ret = send(triggered_fd, response.c_str(), response_header.size(), 0);
 					if (ret == -1 || ret == 0) {
 						LOG_E() << "Failed to send the response header.\n";
 					} else {
@@ -147,10 +170,16 @@ namespace webserv {
 					}
 					_iohandler.remove_fd(triggered_fd);
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				} else {
 					LOG_E() << "Client disconnected.\n";
 					_iohandler.remove_fd(triggered_fd);
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				}
 			}
 		}
