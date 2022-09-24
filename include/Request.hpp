@@ -1,3 +1,4 @@
+// GET REQUEST EXAMPLE
 // GET / HTTP/1.1
 // Host: localhost:8000
 // Connection: keep-alive
@@ -14,6 +15,7 @@
 // Accept-Encoding: gzip, deflate, br
 // Accept-Language: en-US,en;q=0.9,it-IT;q=0.8,it;q=0.7
 
+// POST REQUEST EXAMPLE
 // POST /somewhere_else HTTP/1.1
 // Host: localhost:8000
 // Connection: keep-alive
@@ -37,7 +39,6 @@
 // Cookie: random-test=ThisIsTheTest
 // lname=hello+world
 
-
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
@@ -46,16 +47,17 @@
 #include <vector>
 #include <netinet/in.h>
 #include <cstdlib>
+#include "UpFile.hpp"
 
 namespace webserv
 {
 	enum requests
 	{
 		GET,
-		POST,
-		DELETE,
 		HEAD,
+		POST,
 		PUT,
+		DELETE,
 		CONNECT,
 		OPTIONS,
 		TRACE,
@@ -82,6 +84,7 @@ namespace webserv
 			struct sockaddr_in const			_client;
 			std::map<std::string, std::string>	_content;
 			unsigned long						_bytes_to_read;
+			UpFile								*_file_to_upload;
 		
 		public:
 			Request(std::string const &request, struct sockaddr_in clientAddr);
@@ -94,6 +97,7 @@ namespace webserv
 			struct sockaddr_in const					&get_client(void) const;
 			std::map<std::string, std::string> const	&get_content(void) const;
 			const unsigned long							&get_bytes_to_read(void) const;
+			UpFile const								*get_UpFile(void) const;
 
 			int							parse_method(std::string const &src);
 			std::string	const			parse_path(std::string const &src);
@@ -101,6 +105,7 @@ namespace webserv
 			void						assign_content(std::string const &src);
 			void						set_bytes_to_read(void);
 			void						mod_bytes_to_read(int mod);
+			void						set_UpFile(std::string buffer);
 	};
 }
 

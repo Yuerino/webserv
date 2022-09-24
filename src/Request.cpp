@@ -8,7 +8,8 @@ namespace webserv
 		_path(parse_path(request)),
 		_scheme("http"),
 		_client(clientAddr),
-		_bytes_to_read(0)
+		_bytes_to_read(0),
+		_file_to_upload(nullptr)
 	{
 		assign_content(request);
 	}
@@ -19,11 +20,15 @@ namespace webserv
 		_scheme("http"),
 		_client(other._client),
 		_content(other._content),
-		_bytes_to_read(0)
+		_bytes_to_read(0),
+		_file_to_upload(other._file_to_upload)
 	{}
 
 	Request::~Request()
-	{}
+	{
+		if (_file_to_upload)
+			delete (_file_to_upload);
+	}
 
 	int					Request::get_method(void) const
 	{
@@ -69,6 +74,11 @@ namespace webserv
 		{
 			return UNKNOWN;
 		}
+	}
+
+	UpFile const			*Request::get_UpFile(void) const
+	{
+		return (_file_to_upload);
 	}
 
 	std::string	const		Request::parse_path(std::string const &src)
@@ -126,5 +136,12 @@ namespace webserv
 			_bytes_to_read = 0;
 		else
 			_bytes_to_read -= mod;
+	}
+
+	void				Request::set_UpFile(std::string buffer)
+	{
+		if (!_file_to_upload)
+			_file_to_upload = new UpFile;
+		_file_to_upload->parse_fileStream(buffer);
 	}
 }

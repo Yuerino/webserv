@@ -137,10 +137,15 @@ namespace webserv {
 							_clients.find(triggered_fd)->second = new Request(std::string(buffer), client);
 
 						Request& req = *_clients.find(triggered_fd)->second;
-						req.set_bytes_to_read();
-						if (req.get_bytes_to_read())
+						if (!req.get_bytes_to_read())
+							req.set_bytes_to_read();
+						else
+						{
 							req.mod_bytes_to_read(bytesRead);
-
+							req.set_UpFile(buffer);
+							std::cout << "file delimiter is " << req.get_UpFile()->get_delimiter() << std::endl;
+							std::cout << "file name is " << req.get_UpFile()->get_fileName() << std::endl;
+						}
 						LOG_I() << req.get_method() << "\n";
 						LOG_I() << req.get_path() << "\n";
 						LOG_I() << req.get_scheme() << "\n";
