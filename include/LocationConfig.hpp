@@ -4,6 +4,7 @@
 #include <string>
 #include <set>
 
+#include "Request.hpp"
 #include "utils.hpp"
 
 namespace webserv {

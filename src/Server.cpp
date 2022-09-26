@@ -94,10 +94,16 @@ namespace webserv {
 						_socket_fds.erase(triggered_fd);
 					}
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				} else if (_iohandler.is_eof(i)) {
 					LOG_I() << "Client fd: " << triggered_fd << " left server.\n";
 					_iohandler.remove_fd(triggered_fd);
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				} else if (_socket_fds.find(triggered_fd) != _socket_fds.end()) {
 					int client_fd = accept(triggered_fd, NULL, NULL);
 					if (client_fd == -1) {
@@ -105,6 +111,8 @@ namespace webserv {
 					} else {
 						LOG_I() << "Accepted a connection\n";
 						_iohandler.add_fd(client_fd);
+						if (_clients.find(client_fd) == _clients.end())
+							_clients[client_fd] = NULL;
 					}
 				} else if (_iohandler.is_read_ready(i)) {
 					char buffer[2048];
@@ -113,11 +121,34 @@ namespace webserv {
 						LOG_E() << "Failed to read data.\n";
 						_iohandler.remove_fd(triggered_fd);
 						close(triggered_fd);
+						if (_clients.find(triggered_fd)->second != NULL)
+							delete _clients.find(triggered_fd)->second;
+						_clients.erase(triggered_fd);
 					} else {
 						buffer[bytesRead] = '\0';
 						LOG_I() << "Received a message from connection: " << buffer << "\n";
-						_iohandler.set_write_ready(triggered_fd);
-					}
+
+						struct sockaddr_in	client;
+
+						if (_clients.find(triggered_fd)->second == NULL)
+							_clients.find(triggered_fd)->second = new Request(std::string(buffer), client);
+
+						Request& req = *_clients.find(triggered_fd)->second;
+						if (!req.get_bytes_to_read())
+							req.set_bytes_to_read();
+						else
+						{
+							req.mod_bytes_to_read(bytesRead);
+							req.set_UpFile(buffer);
+							std::cout << "file delimiter is " << req.get_UpFile()->get_delimiter() << std::endl;
+							std::cout << "file name is " << req.get_UpFile()->get_fileName() << std::endl;
+						}
+						LOG_I() << req.get_method() << "\n";
+						LOG_I() << req.get_path() << "\n";
+						LOG_I() << req.get_scheme() << "\n";
+						if (!req.get_bytes_to_read())
+							_iohandler.set_write_ready(triggered_fd);
+						}
 				} else if (_iohandler.is_write_ready(i)) {
 					Response response;
 					response.process();
@@ -130,10 +161,16 @@ namespace webserv {
 					}
 					_iohandler.remove_fd(triggered_fd);
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				} else {
 					LOG_E() << "Client disconnected.\n";
 					_iohandler.remove_fd(triggered_fd);
 					close(triggered_fd);
+					if (_clients.find(triggered_fd)->second != NULL)
+						delete _clients.find(triggered_fd)->second;
+					_clients.erase(triggered_fd);
 				}
 			}
 		}
