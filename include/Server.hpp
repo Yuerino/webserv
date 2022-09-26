@@ -37,8 +37,10 @@ namespace webserv {
 
 		std::map<int, Listen>::iterator	socket_it;
 
-		void remove_client(const int& client_fd);
+		static int create_socket();
+		static void bind_socket(const int& socket_fd, const std::string& host, const int& port);
 
+		void remove_client(const int& client_fd);
 		void handle_fail_event(const int& triggered_fd);
 		void handle_accept_client(const int& socket_fd);
 		void handle_read_event(const int& client_fd);

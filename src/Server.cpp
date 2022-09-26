@@ -46,40 +46,59 @@ namespace webserv {
 		std::set<Listen>::const_iterator l_it = _listens.begin();
 
 		for (; l_it != _listens.end(); ++l_it) {
-			socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-			if (socket_fd == -1) {
-				throw std::runtime_error("Fail to create socket: " + std::string(std::strerror(errno)) + "\n");
-			}
-			LOG_D() << "Create a socket, fd: " << socket_fd << "\n";
+			socket_fd = create_socket();
 
-			int _ = 1;
-			if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &_, sizeof(_)) == -1) {
-				close(socket_fd);
-				throw std::runtime_error("Fail to set socket option: " + std::string(std::strerror(errno)) + "\n");
-			}
-			LOG_D() << "Set options for socket fd: " << socket_fd << "\n";
-
-			sockaddr_in sock_addr;
-			bzero(&sock_addr, sizeof(sock_addr));
-			sock_addr.sin_family = AF_INET;
-			if (l_it->address.empty()) {
-				sock_addr.sin_addr.s_addr = INADDR_ANY;
-			} else {
-				inet_pton(AF_INET, l_it->address.c_str(), &sock_addr.sin_addr.s_addr);
-			}
-			sock_addr.sin_port = htons(l_it->port);
-
-			if (bind(socket_fd, (sockaddr*)&sock_addr, sizeof(sock_addr)) == -1) {
-				close(socket_fd);
-				throw std::runtime_error("Failed to bind socket: " + std::string(std::strerror(errno)) + "\n");
-			}
-			LOG_D() << "Bind socket fd: " << socket_fd << " to " << l_it->get_full_address() << "\n";
+			bind_socket(socket_fd, l_it->address, l_it->port);
 
 			_iohandler.add_fd(socket_fd);
 			LOG_D() << "Add socket fd: " << socket_fd << " to kevent\n";
 
 			_socket_fds.insert(std::make_pair(socket_fd, *l_it));
 		}
+	}
+
+	/**
+	 * @brief Create a socket
+	 * @throw runtime_error in case fail to create
+	 */
+	int Server::create_socket() {
+		int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+		if (socket_fd == -1) {
+			throw std::runtime_error("Fail to create socket: " + std::string(std::strerror(errno)) + "\n");
+		}
+		LOG_D() << "Create a socket, fd: " << socket_fd << "\n";
+
+		return socket_fd;
+	}
+
+	/**
+	 * @brief Setup socket option and bind it to host:port
+	 */
+	void Server::bind_socket(const int& socket_fd, const std::string& host, const int& port) {
+		int _ = 1;
+		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &_, sizeof(_)) == -1) {
+			close(socket_fd);
+			throw std::runtime_error("Fail to set socket option: " + std::string(std::strerror(errno)) + "\n");
+		}
+		LOG_D() << "Set options for socket fd: " << socket_fd << "\n";
+
+		sockaddr_in sock_addr;
+		bzero(&sock_addr, sizeof(sock_addr));
+
+		sock_addr.sin_family = AF_INET;
+		if (host.empty()) {
+			sock_addr.sin_addr.s_addr = INADDR_ANY;
+		} else {
+			inet_pton(AF_INET, host.c_str(), &sock_addr.sin_addr.s_addr);
+		}
+
+		sock_addr.sin_port = htons(port);
+
+		if (bind(socket_fd, (sockaddr*)&sock_addr, sizeof(sock_addr)) == -1) {
+			close(socket_fd);
+			throw std::runtime_error("Failed to bind socket: " + std::string(std::strerror(errno)) + "\n");
+		}
+		LOG_D() << "Bind socket fd: " << socket_fd << " to " << host << ":" << port << "\n";
 	}
 
 	/**
@@ -161,7 +180,7 @@ namespace webserv {
 	}
 
 	/**
-	 * @brief Socket accept connection from client
+	 * @brief Handle socket accept connection from client
 	 */
 	void Server::handle_accept_client(const int& socket_fd) {
 		// TODO: get client host:port here
@@ -183,6 +202,9 @@ namespace webserv {
 		}
 	}
 
+	/**
+	 * @brief Handle read from client
+	 */
 	void Server::handle_read_event(const int& client_fd) {
 		char buffer[READ_BUFFER];
 		ssize_t bytesRead = recv(client_fd, buffer, 2048, 0);
@@ -226,6 +248,9 @@ namespace webserv {
 		}
 	}
 
+	/**
+	 * @brief Handle write to client
+	 */
 	void Server::handle_write_event(const int& client_fd) {
 		if (_clients.count(client_fd) == 0) {
 			LOG_E() << "Client fd: " << client_fd << " somehow not added into client list\n";
