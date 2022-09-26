@@ -1,6 +1,8 @@
 #include "Server.hpp"
 
 namespace webserv {
+	bool internal::g_shutdown = false;
+
 	Server::Server(const std::vector<ServerConfig>& server_configs) : _server_configs(server_configs), _iohandler() {
 		std::vector<ServerConfig>::const_iterator s_it = _server_configs.begin();
 		std::vector<ServerConfig>::const_iterator s_ite = _server_configs.end();
@@ -17,7 +19,17 @@ namespace webserv {
 		for (socket_it = _socket_fds.begin(); socket_it != _socket_fds.end(); ++socket_it) {
 			if (socket_it->first > 0) {
 				close(socket_it->first);
-				LOG_D() << "Close socket " << socket_it->second.get_full_address() << ", fd: <<" << socket_it->first << "\n";
+			}
+		}
+
+		std::map<int, Request*>::iterator client_it = _clients.begin();
+		for (; client_it != _clients.end(); ++client_it) {
+			if (client_it->second != NULL) {
+				delete client_it->second;
+			}
+
+			if (client_it->first > 0) {
+				close(client_it->first);
 			}
 		}
 	}
@@ -83,96 +95,154 @@ namespace webserv {
 
 		int new_event_size;
 		int triggered_fd;
-		while (69) {
+		while (!internal::g_shutdown) {
 			new_event_size = _iohandler.wait_for_new_event();
 
 			for (int i = 0; i < new_event_size; ++i) {
 				triggered_fd = _iohandler.get_triggered_fd(i);
 				if (_iohandler.is_error(i)) {
-					LOG_E() << "Poll failed: " << std::string(std::strerror(errno)) << "\n";
-					if (_socket_fds.find(triggered_fd) != _socket_fds.end()) {
-						_socket_fds.erase(triggered_fd);
-					}
-					close(triggered_fd);
-					if (_clients.find(triggered_fd)->second != NULL)
-						delete _clients.find(triggered_fd)->second;
-					_clients.erase(triggered_fd);
+					handle_fail_event(triggered_fd);
 				} else if (_iohandler.is_eof(i)) {
-					LOG_I() << "Client fd: " << triggered_fd << " left server.\n";
-					_iohandler.remove_fd(triggered_fd);
-					close(triggered_fd);
-					if (_clients.find(triggered_fd)->second != NULL)
-						delete _clients.find(triggered_fd)->second;
-					_clients.erase(triggered_fd);
-				} else if (_socket_fds.find(triggered_fd) != _socket_fds.end()) {
-					int client_fd = accept(triggered_fd, NULL, NULL);
-					if (client_fd == -1) {
-						LOG_E() << "Failed to accept connection: " << std::strerror(errno) << "\n";
-					} else {
-						LOG_I() << "Accepted a connection\n";
-						_iohandler.add_fd(client_fd);
-						if (_clients.find(client_fd) == _clients.end())
-							_clients[client_fd] = NULL;
-					}
+					remove_client(triggered_fd);
+				} else if (_socket_fds.count(triggered_fd) != 0) {
+					handle_accept_client(triggered_fd);
 				} else if (_iohandler.is_read_ready(i)) {
-					char buffer[2048];
-					ssize_t bytesRead = recv(triggered_fd, buffer, 2048, 0);
-					if (bytesRead == -1 || bytesRead == 0) {
-						LOG_E() << "Failed to read data.\n";
-						_iohandler.remove_fd(triggered_fd);
-						close(triggered_fd);
-						if (_clients.find(triggered_fd)->second != NULL)
-							delete _clients.find(triggered_fd)->second;
-						_clients.erase(triggered_fd);
-					} else {
-						buffer[bytesRead] = '\0';
-						LOG_I() << "Received a message from connection: " << buffer << "\n";
-
-						struct sockaddr_in	client;
-
-						if (_clients.find(triggered_fd)->second == NULL)
-							_clients.find(triggered_fd)->second = new Request(std::string(buffer), client);
-
-						Request& req = *_clients.find(triggered_fd)->second;
-						if (!req.get_bytes_to_read())
-							req.set_bytes_to_read();
-						else
-						{
-							req.mod_bytes_to_read(bytesRead);
-							req.set_UpFile(buffer);
-							std::cout << "file delimiter is " << req.get_UpFile()->get_delimiter() << std::endl;
-							std::cout << "file name is " << req.get_UpFile()->get_fileName() << std::endl;
-						}
-						LOG_I() << req.get_method() << "\n";
-						LOG_I() << req.get_path() << "\n";
-						LOG_I() << req.get_scheme() << "\n";
-						if (!req.get_bytes_to_read())
-							_iohandler.set_write_ready(triggered_fd);
-						}
+					handle_read_event(triggered_fd);
 				} else if (_iohandler.is_write_ready(i)) {
-					Response response;
-					response.process();
-
-					int ret = send(triggered_fd, response.get_raw_data().c_str(), response.get_raw_data().size(), 0);
-					if (ret == -1 || ret == 0) {
-						LOG_E() << "Failed to send the response header.\n";
-					} else {
-						LOG_I() << "Send a response to client\n";
-					}
-					_iohandler.remove_fd(triggered_fd);
-					close(triggered_fd);
-					if (_clients.find(triggered_fd)->second != NULL)
-						delete _clients.find(triggered_fd)->second;
-					_clients.erase(triggered_fd);
+					handle_write_event(triggered_fd);
 				} else {
-					LOG_E() << "Client disconnected.\n";
-					_iohandler.remove_fd(triggered_fd);
-					close(triggered_fd);
-					if (_clients.find(triggered_fd)->second != NULL)
-						delete _clients.find(triggered_fd)->second;
-					_clients.erase(triggered_fd);
+					LOG_E() << "Unknown poll event\n";
+					remove_client(triggered_fd);
 				}
 			}
 		}
+	}
+
+	/**
+	 * @brief Remove client from server
+	 */
+	void Server::remove_client(const int& client_fd) {
+		LOG_D() << "Removed client fd: " << client_fd << "\n";
+
+		_iohandler.remove_fd(client_fd);
+
+		if (_clients.count(client_fd) > 0) {
+			if (_clients[client_fd] != NULL) {
+				delete _clients[client_fd];
+			}
+			_clients.erase(client_fd);
+		}
+
+		if (client_fd > 0) {
+			close(client_fd);
+		}
+	}
+
+	/**
+	 * @brief Handle fail poll event
+	 */
+	void Server::handle_fail_event(const int& triggered_fd) {
+		LOG_E() << "Poll failed: " << std::string(std::strerror(errno)) << "\n";
+
+		_iohandler.remove_fd(triggered_fd);
+
+		if (_socket_fds.count(triggered_fd) > 0) {
+			_socket_fds.erase(triggered_fd);
+		} else if (_clients.count(triggered_fd) > 0) {
+			if (_clients[triggered_fd] != NULL) {
+				delete _clients[triggered_fd];
+			}
+			_clients.erase(triggered_fd);
+		}
+
+		if (triggered_fd > 0) {
+			close(triggered_fd);
+		}
+	}
+
+	/**
+	 * @brief Socket accept connection from client
+	 */
+	void Server::handle_accept_client(const int& socket_fd) {
+		// TODO: get client host:port here
+		int client_fd = accept(socket_fd, NULL, NULL);
+
+		if (client_fd == -1) {
+			LOG_E() << "Failed to accept connection: " << std::strerror(errno) << "\n";
+			return;
+		}
+
+		LOG_I() << "Accepted a connection, client fd: " << client_fd << "\n";
+
+		_iohandler.add_fd(client_fd);
+
+		if (_clients.count(client_fd) == 0) {
+			_clients[client_fd] = NULL;
+		} else {
+			LOG_E() << "Client fd: " << client_fd << " somehow already connected server\n";
+		}
+	}
+
+	void Server::handle_read_event(const int& client_fd) {
+		char buffer[READ_BUFFER];
+		ssize_t bytesRead = recv(client_fd, buffer, 2048, 0);
+
+		if (bytesRead == -1 || bytesRead == 0) {
+			LOG_E() << "Failed to read data from client fd: " << client_fd << "\n";
+			return remove_client(client_fd);
+		}
+
+		buffer[bytesRead] = '\0';
+		LOG_I() << "Received a message from client fd: " << client_fd << ", message: " << buffer << "\n";
+
+		struct sockaddr_in	client;
+
+		if (_clients.count(client_fd) == 0) {
+			LOG_E() << "Client fd: " << client_fd << " somehow not added into client list\n";
+			return;
+		}
+
+		if (_clients[client_fd] == NULL) {
+			_clients[client_fd] = new Request(std::string(buffer), client);
+		}
+
+		Request& req = *_clients[client_fd];
+
+		if (!req.get_bytes_to_read()) {
+			req.set_bytes_to_read();
+		} else {
+			req.mod_bytes_to_read(bytesRead);
+			req.set_UpFile(buffer);
+			LOG_D() << "file delimiter is " << req.get_UpFile()->get_delimiter() << "\n";
+			LOG_D() << "file name is " << req.get_UpFile()->get_fileName() << "\n";
+		}
+
+		LOG_D() << req.get_method() << "\n";
+		LOG_D() << req.get_path() << "\n";
+		LOG_D() << req.get_scheme() << "\n";
+
+		if (!req.get_bytes_to_read()) {
+			_iohandler.set_write_ready(client_fd);
+		}
+	}
+
+	void Server::handle_write_event(const int& client_fd) {
+		if (_clients.count(client_fd) == 0) {
+			LOG_E() << "Client fd: " << client_fd << " somehow not added into client list\n";
+			return;
+		}
+
+		Response response;
+		response.process(*_clients[client_fd]);
+
+		int ret = send(client_fd, response.get_raw_data().c_str(), response.get_raw_data().size(), 0);
+
+		if (ret == -1 || ret == 0) {
+			LOG_E() << "Failed to send the response to client fd: " << client_fd << "\n";
+		} else {
+			LOG_I() << "Send a response to client fd: " << client_fd << "\n";
+		}
+
+		remove_client(client_fd);
 	}
 } /* namespace webserv */

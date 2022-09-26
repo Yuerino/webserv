@@ -1,6 +1,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <stdlib.h>
+#include <signal.h>
+#include <stdio.h>
 
 #ifdef DEBUG
 #define PARSER_DEBUG
@@ -9,6 +11,13 @@
 #include "utils.hpp"
 #include "Parser.hpp"
 #include "Server.hpp"
+
+void sig_handler(int num) {
+	if (num == SIGINT || num == SIGQUIT) {
+		LOG_I() << "Gracefully shutting down server...\n";
+		webserv::internal::g_shutdown = true;
+	}
+}
 
 int main(int argc, char **argv) {
 	LOG_FILE("webserv.log");
@@ -22,6 +31,9 @@ int main(int argc, char **argv) {
 		LOG_E() << "Invalid configuration file extension.\n";
 		return EXIT_FAILURE;
 	}
+
+	signal(SIGINT, sig_handler);
+	signal(SIGQUIT, sig_handler);
 
 	webserv::Parser parser;
 	try {

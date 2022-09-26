@@ -18,6 +18,8 @@
 
 namespace webserv {
 	namespace internal {
+		extern bool g_shutdown;
+
 		class IOHandler {
 		public:
 			IOHandler();

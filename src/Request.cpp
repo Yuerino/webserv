@@ -9,7 +9,7 @@ namespace webserv
 		_scheme("http"),
 		_client(clientAddr),
 		_bytes_to_read(0),
-		_file_to_upload(nullptr)
+		_file_to_upload(0)
 	{
 		assign_content(request);
 	}

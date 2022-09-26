@@ -1,21 +1,78 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response() : _status_code(0) {}
+	Response::Response() : _request(0), _status_code(0) {}
 
-	Response::~Response() {}
+	Response::~Response() {
+		if (_request != NULL) {
+			delete _request;
+		}
+	}
 
 	/**
 	 * @brief Process the request and setup the response accordingly
 	 */
-	void Response::process() {
-		_status_code = 400;
+	void Response::process(const Request& request) {
+		_request = new Request(request);
+
+		if (!set_server_config() && !set_location_config() && !set_method()) {
+			return set_error_response();
+		}
+
+		if (!_cgi_path.empty()) {
+			return run_cgi();
+		}
+
+		switch (_request->get_method()) {
+			case GET:
+				return process_get();
+			default:
+				_status_code = 400;
+				break;
+		}
+
 		set_error_response();
 	}
 
-	/* Getter */
-	const std::string& Response::get_raw_data() const {
-		return _response;
+	/**
+	 * @brief Set server config accordingly with host header
+	 * @return true on success otherwise false and set status code to 400
+	 */
+	bool Response::set_server_config() {
+		return true;
+	}
+
+	/**
+	 * @brief Set location config accordingly with server config and request URI
+	 * @return true on success otherwise false and set status code to 404
+	 */
+	bool Response::set_location_config() {
+		return true;
+	}
+
+	/**
+	 * @brief Check and set method or setup cgi
+	 * @return true on success otherwise 405 Method not allow or ??? CGI bin not found
+	 */
+	bool Response::set_method() {
+		return true;
+	}
+
+	/**
+	 * @brief Setup CGI data, run CGI and set CGI response
+	 */
+	void Response::run_cgi() {
+		_status_code = 501;
+		set_error_response();
+	}
+
+	/**
+	 * @brief Process GET method and setup response
+	 */
+	void Response::process_get() {
+		_status_code = 200;
+		_body = "<html><body><h1>Hello World</h1><body></html>";
+		set_response();
 	}
 
 	/**
@@ -69,6 +126,11 @@ namespace webserv {
 		_body += "</html>";
 
 		set_response();
+	}
+
+	/* Getter */
+	const std::string& Response::get_raw_data() const {
+		return _response;
 	}
 
 	/**

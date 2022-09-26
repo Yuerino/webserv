@@ -85,7 +85,7 @@ namespace webserv
 			std::map<std::string, std::string>	_content;
 			unsigned long						_bytes_to_read;
 			UpFile								*_file_to_upload;
-		
+
 		public:
 			Request(std::string const &request, struct sockaddr_in clientAddr);
 			Request(Request const &other);
