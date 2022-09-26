@@ -1,5 +1,4 @@
 #include "utils.hpp"
-#include "Logger.hpp"
 
 namespace webserv {
 	/**

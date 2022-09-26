@@ -10,6 +10,7 @@
 
 #include "ServerConfig.hpp"
 #include "IOHandler.hpp"
+#include "Response.hpp"
 
 namespace webserv {
 	class Server {

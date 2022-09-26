@@ -22,6 +22,8 @@
 
 #include "Logger.hpp"
 
+#define CRLF "\r\n"
+
 #define LOG_I() LOG(webserv::LOG_INFO)
 #define LOG_E() LOG(webserv::LOG_ERROR)
 #define LOG_D() LOG(webserv::LOG_DEBUG)

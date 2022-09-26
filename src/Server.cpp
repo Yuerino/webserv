@@ -119,19 +119,10 @@ namespace webserv {
 						_iohandler.set_write_ready(triggered_fd);
 					}
 				} else if (_iohandler.is_write_ready(i)) {
-					std::string response_header =	"HTTP/1.1 200 OK\r\n"
-													"Date: Mon, 01 Jul 2022 12:12:12 GMT\r\n"
-													"Server: webserv\r\n"
-													"Content-Length: 88\r\n"
-													"Content-Type: text/html\r\n"
-													"Connection: close\r\n\r\n"
-													"<html>\n"
-													"<body>\n"
-													"<h1>Hello, World!</h1>\n"
-													"</body>\n"
-													"</html>";
+					Response response;
+					response.process();
 
-					int ret = send(triggered_fd, response_header.c_str(), response_header.size(), 0);
+					int ret = send(triggered_fd, response.get_raw_data().c_str(), response.get_raw_data().size(), 0);
 					if (ret == -1 || ret == 0) {
 						LOG_E() << "Failed to send the response header.\n";
 					} else {
@@ -148,6 +139,3 @@ namespace webserv {
 		}
 	}
 } /* namespace webserv */
-
-
-
