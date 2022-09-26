@@ -143,22 +143,19 @@ namespace webserv {
 						{
 							req.mod_bytes_to_read(bytesRead);
 							req.set_UpFile(buffer);
-							std::cout << "file delimiter is " << req.get_UpFile()->get_delimiter() << std::endl;
-							std::cout << "file name is " << req.get_UpFile()->get_fileName() << std::endl;
 						}
-						LOG_I() << req.get_method() << "\n";
-						LOG_I() << req.get_path() << "\n";
-						LOG_I() << req.get_scheme() << "\n";
 						if (!req.get_bytes_to_read())
 							_iohandler.set_write_ready(triggered_fd);
 						}
 				} else if (_iohandler.is_write_ready(i)) {
+					if (_clients.find(triggered_fd)->second->get_UpFile())
+						_clients.find(triggered_fd)->second->get_UpFile()->write_to_file("/home/pnuti/Documents/WOB/coding/webserv/test/");
 					std::string html_page = file_to_string("test/pages/post.html");
 					std::string response_header =	"HTTP/1.1 200 OK\r\n"
 													"Date: Mon, 01 Jul 2022 12:12:12 GMT\r\n"
 													"Server: webserv\r\n"
 													"Set-Cookie: random-test=ThisIsTheTest\r\n"
-													"Content-Length: " + std::to_string(html_page.size()) + "\r\n"
+													"Content-Length: " + to_string<size_t>(html_page.size()) + "\r\n"
 													"Content-Type: text/html\r\n"
 													"Connection: close\r\n\r\n";/*
 													"<html>\n"

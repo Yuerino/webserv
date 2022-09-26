@@ -36,6 +36,7 @@ namespace webserv
 			void				set_fileContent(std::string fileContent);
 
 			void				parse_fileStream(std::string const &buffer);
+			void				write_to_file(std::string const &path);
 	};
 }
 

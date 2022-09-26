@@ -130,4 +130,26 @@ namespace webserv {
 
 		return pattern_i == pattern_len;
 	}
+
+	std::string esc_to_string(std::string const &other)
+	{
+		std::string chars[2] = {"\r", "\n"};
+		std::string repres[2] = {"\\r", "\\n"};
+		size_t i(0);
+		std::string	res(other);
+		while (i < 2)
+		{
+			size_t	begin(0);
+			size_t	end(res.find(chars[i]));
+			while (end != std::string::npos)
+			{
+				res.insert(end, repres[i]);
+				res.erase(res.find(chars[i]), 1);
+				begin += end + 2;
+				end = res.find(chars[i]);
+			}
+			i++;
+		}
+		return (res);
+	}
 } /* namespace webserv */

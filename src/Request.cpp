@@ -9,7 +9,7 @@ namespace webserv
 		_scheme("http"),
 		_client(clientAddr),
 		_bytes_to_read(0),
-		_file_to_upload(nullptr)
+		_file_to_upload(NULL)
 	{
 		assign_content(request);
 	}
@@ -76,7 +76,7 @@ namespace webserv
 		}
 	}
 
-	UpFile const			*Request::get_UpFile(void) const
+	UpFile				*Request::get_UpFile(void) const
 	{
 		return (_file_to_upload);
 	}

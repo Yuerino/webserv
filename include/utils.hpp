@@ -55,4 +55,6 @@ namespace webserv {
 
 	bool is_match(std::string str, std::string pattern, char delimiter);
 
+	std::string esc_to_string(std::string const &other);
+
 } /* namespace webserv */

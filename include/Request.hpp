@@ -97,7 +97,7 @@ namespace webserv
 			struct sockaddr_in const					&get_client(void) const;
 			std::map<std::string, std::string> const	&get_content(void) const;
 			const unsigned long							&get_bytes_to_read(void) const;
-			UpFile const								*get_UpFile(void) const;
+			UpFile										*get_UpFile(void) const;
 
 			int							parse_method(std::string const &src);
 			std::string	const			parse_path(std::string const &src);
