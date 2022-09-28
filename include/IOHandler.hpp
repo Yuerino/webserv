@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <cstring>
 #include <stdexcept>
+
 #include "utils.hpp"
 
 #ifdef __APPLE__
@@ -17,6 +18,8 @@
 
 namespace webserv {
 	namespace internal {
+		extern bool g_shutdown;
+
 		class IOHandler {
 		public:
 			IOHandler();

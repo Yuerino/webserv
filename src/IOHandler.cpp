@@ -14,7 +14,7 @@ namespace webserv {
 
 		int IOHandler::wait_for_new_event() {
 			int new_event_size = kevent(_poll_fd, NULL, 0, _event_list, 100, NULL);
-			if (new_event_size == -1) {
+			if (new_event_size == -1 && !g_shutdown) {
 				throw std::runtime_error("Poll event failed: " + std::string(std::strerror(errno)) + "\n");
 			}
 
@@ -92,7 +92,7 @@ namespace webserv {
 			int new_event_size = epoll_wait(_poll_fd, _event_list, 100, -1);
 			if (new_event_size == 0) {
 				LOG_D() << "No new event within timeout\n";
-			} else if (new_event_size == -1) {
+			} else if (new_event_size == -1 && !g_shutdown) {
 				throw std::runtime_error("Poll event failed: " + std::string(std::strerror(errno)) + "\n");
 			}
 

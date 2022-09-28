@@ -22,6 +22,8 @@
 
 #include "Logger.hpp"
 
+#define CRLF "\r\n"
+
 #define LOG_I() LOG(webserv::LOG_INFO)
 #define LOG_E() LOG(webserv::LOG_ERROR)
 #define LOG_D() LOG(webserv::LOG_DEBUG)
@@ -31,6 +33,30 @@
 #define LOG_FILE(path) webserv::internal::Logger::set_log_file(path)
 
 namespace webserv {
+	enum requests
+	{
+		GET,
+		HEAD,
+		POST,
+		PUT,
+		DELETE,
+		CONNECT,
+		OPTIONS,
+		TRACE,
+		UNKNOWN
+	};
+
+	static const char* const HTTPMethodStrings[] = {
+		"GET",
+		"HEAD",
+		"POST",
+		"PUT",
+		"DELETE",
+		"CONNECT",
+		"OPTIONS",
+		"TRACE"
+	};
+
 	/**
 	 * @brief Convert T type to string
 	 * @note Only if T type has operator<< overloaded

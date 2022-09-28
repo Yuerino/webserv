@@ -70,7 +70,7 @@ namespace webserv
 		if (_delimiter == buffer.substr(0, buffer.find("\r\n")))
 			_fileContent.append(buffer.substr(buffer.find(del_key) + del_key.size(), buffer.rfind(_delimiter) - (buffer.find(del_key) + del_key.size() + 2)));
 		else
-			_fileContent.append(buffer.substr(0, buffer.rfind(_delimiter) - 1));
+			_fileContent.append(buffer.substr(0, buffer.rfind(_delimiter) - 2));
 	}
 
 	void				UpFile::write_to_file(std::string const &path)

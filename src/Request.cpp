@@ -1,33 +1,67 @@
 #include "Request.hpp"
-#include "utils.hpp"
 
 namespace webserv
 {
-	Request::Request(std::string const &request, struct sockaddr_in clientAddr) :
-		_method(parse_method(request)),
-		_path(parse_path(request)),
-		_scheme("http"),
-		_client(clientAddr),
+	Request::Request() :
+		_method(-1),
+		_path(),
+		_scheme(),
+		_client(),
 		_bytes_to_read(0),
-		_file_to_upload(NULL)
-	{
-		assign_content(request);
-	}
+		_file_to_upload(NULL),
+		_server_listen()
+	{}
+
+	Request::Request(struct sockaddr_in client_address, Listen server_listen) :
+		_method(-1),
+		_path(),
+		_scheme(),
+		_client(client_address),
+		_bytes_to_read(0),
+		_file_to_upload(NULL),
+		_server_listen(server_listen)
+	{}
 
 	Request::Request(Request const &other) :
 		_method(other._method),
 		_path(other._path),
-		_scheme("http"),
+		_scheme(other._scheme),
 		_client(other._client),
 		_content(other._content),
-		_bytes_to_read(0),
-		_file_to_upload(other._file_to_upload)
-	{}
+		_bytes_to_read(other._bytes_to_read),
+		_file_to_upload(NULL),
+		_server_listen(other._server_listen)
+	{
+		if (other._file_to_upload)
+			_file_to_upload = new UpFile(*other._file_to_upload);
+	}
+
+	Request& Request::operator=(Request const &other)
+	{
+		_method = other._method;
+		_path = other._path;
+		_scheme = other._scheme;
+		_client = other._client;
+		_content = other._content;
+		_bytes_to_read = other._bytes_to_read;
+		_server_listen = other._server_listen;
+		if (other._file_to_upload)
+			_file_to_upload = new UpFile(*other._file_to_upload);
+		return *this;
+	}
 
 	Request::~Request()
 	{
 		if (_file_to_upload)
 			delete (_file_to_upload);
+	}
+
+	void	Request::init(std::string const &request)
+	{
+		_method = parse_method(request);
+		_path = parse_path(request);
+		_scheme = "http";
+		assign_content(request);
 	}
 
 	int					Request::get_method(void) const
@@ -58,6 +92,11 @@ namespace webserv
 	std::map<std::string, std::string> const	&Request::get_content(void) const
 	{
 		return (_content);
+	}
+
+	Listen const								&Request::get_server_listen(void) const
+	{
+		return (_server_listen);
 	}
 
 	int					Request::parse_method(std::string const &src)

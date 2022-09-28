@@ -47,50 +47,33 @@
 #include <vector>
 #include <netinet/in.h>
 #include <cstdlib>
+
 #include "UpFile.hpp"
+#include "utils.hpp"
+#include "ServerConfig.hpp"
 
 namespace webserv
 {
-	enum requests
-	{
-		GET,
-		HEAD,
-		POST,
-		PUT,
-		DELETE,
-		CONNECT,
-		OPTIONS,
-		TRACE,
-		UNKNOWN
-	};
-
-	static const char* const HTTPMethodStrings[] = {
-		"GET",
-		"HEAD",
-		"POST",
-		"PUT",
-		"DELETE",
-		"CONNECT",
-		"OPTIONS",
-		"TRACE"
-	};
-
 	class Request
 	{
 		private:
 			int									_method;
-			std::string	const					_path;
-			std::string const					_scheme;
-			struct sockaddr_in const			_client;
+			std::string							_path;
+			std::string							_scheme;
+			struct sockaddr_in					_client;
 			std::map<std::string, std::string>	_content;
 			unsigned long						_bytes_to_read;
 			UpFile								*_file_to_upload;
-		
+			Listen								_server_listen;
+
 		public:
-			Request(std::string const &request, struct sockaddr_in clientAddr);
+			Request();
+			Request(struct sockaddr_in client_address, Listen server_listen);
 			Request(Request const &other);
+			Request& operator=(Request const &other);
 			~Request();
 
+			void										init(std::string const &request);
 			int											get_method(void) const;
 			std::string const							&get_path(void) const;
 			std::string const							&get_scheme(void) const;
@@ -98,6 +81,7 @@ namespace webserv
 			std::map<std::string, std::string> const	&get_content(void) const;
 			const unsigned long							&get_bytes_to_read(void) const;
 			UpFile										*get_UpFile(void) const;
+			Listen const								&get_server_listen(void) const;
 
 			int							parse_method(std::string const &src);
 			std::string	const			parse_path(std::string const &src);
