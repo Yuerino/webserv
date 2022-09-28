@@ -33,6 +33,30 @@
 #define LOG_FILE(path) webserv::internal::Logger::set_log_file(path)
 
 namespace webserv {
+	enum requests
+	{
+		GET,
+		HEAD,
+		POST,
+		PUT,
+		DELETE,
+		CONNECT,
+		OPTIONS,
+		TRACE,
+		UNKNOWN
+	};
+
+	static const char* const HTTPMethodStrings[] = {
+		"GET",
+		"HEAD",
+		"POST",
+		"PUT",
+		"DELETE",
+		"CONNECT",
+		"OPTIONS",
+		"TRACE"
+	};
+
 	/**
 	 * @brief Convert T type to string
 	 * @note Only if T type has operator<< overloaded
@@ -56,5 +80,7 @@ namespace webserv {
 	bool is_ip4(const std::string& ip4);
 
 	bool is_match(std::string str, std::string pattern, char delimiter);
+
+	std::string esc_to_string(std::string const &other);
 
 } /* namespace webserv */

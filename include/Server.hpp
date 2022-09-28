@@ -33,7 +33,7 @@ namespace webserv {
 		internal::IOHandler			_iohandler;
 		std::set<Listen>			_listens;
 		std::map<int, Listen>		_socket_fds;
-		std::map<int, Request*>		_clients;
+		std::map<int, Request>		_clients;
 
 		std::map<int, Listen>::iterator	socket_it;
 

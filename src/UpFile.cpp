@@ -1,4 +1,5 @@
 #include "UpFile.hpp"
+#include "utils.hpp"
 
 namespace webserv
 {
@@ -62,13 +63,28 @@ namespace webserv
 			int pos = buffer.find("\r\n");
 			set_delimiter(buffer.substr(0, pos));
 			std::string disposition_key("Content-Disposition:");
-			std::string sub_buf(buffer.substr(buffer.find(disposition_key) + disposition_key.size(), buffer.find("\r\n", buffer.find(disposition_key) + disposition_key.size())));
+			std::string sub_buf(buffer.substr(buffer.find(disposition_key) + disposition_key.size(), buffer.find("\r\n", buffer.find(disposition_key) + disposition_key.size()) - (buffer.find(disposition_key) + disposition_key.size())));
 			std::string file_key("filename=\"");
-			set_fileName(sub_buf.substr(sub_buf.find(file_key) + file_key.size(), sub_buf.find("\r\n") - sub_buf.find(file_key) + file_key.size())); // unsafe - testing purposes
+			set_fileName(sub_buf.substr(sub_buf.find(file_key) + file_key.size(), sub_buf.size() - (sub_buf.find(file_key) + file_key.size() + 1))); // unsafe - testing purposes
 		}
 		if (_delimiter == buffer.substr(0, buffer.find("\r\n")))
-			_fileContent.append(buffer.substr(buffer.find(del_key) + del_key.size(), buffer.rfind(del_key, _delimiter.size() + 1)));
+			_fileContent.append(buffer.substr(buffer.find(del_key) + del_key.size(), buffer.rfind(_delimiter) - (buffer.find(del_key) + del_key.size() + 2)));
 		else
-			_fileContent.append(buffer.substr(0, buffer.rfind(del_key, _delimiter.size() + 1)));
+			_fileContent.append(buffer.substr(0, buffer.rfind(_delimiter) - 2));
+	}
+
+	void				UpFile::write_to_file(std::string const &path)
+	{
+		std::ofstream dest_file;
+		try
+		{
+			dest_file.open(std::string(path + _fileName).c_str());
+		}
+		catch(const std::exception& e)
+		{
+			return ;
+		}
+		dest_file << _fileContent;
+		dest_file.close();
 	}
 } // namespace webserv

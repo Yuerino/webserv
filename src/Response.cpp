@@ -73,7 +73,8 @@ namespace webserv {
 	 */
 	void Response::process_get() {
 		_status_code = 200;
-		_body = "<html><body><h1>Hello World</h1><body></html>";
+		_body = file_to_string("./html/post.html");
+		// _body = "<html><body><h1>Hello World</h1><body></html>";
 		set_response();
 	}
 

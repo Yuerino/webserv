@@ -22,12 +22,8 @@ namespace webserv {
 			}
 		}
 
-		std::map<int, Request*>::iterator client_it = _clients.begin();
+		std::map<int, Request>::iterator client_it = _clients.begin();
 		for (; client_it != _clients.end(); ++client_it) {
-			if (client_it->second != NULL) {
-				delete client_it->second;
-			}
-
 			if (client_it->first > 0) {
 				close(client_it->first);
 			}
@@ -146,9 +142,6 @@ namespace webserv {
 		_iohandler.remove_fd(client_fd);
 
 		if (_clients.count(client_fd) > 0) {
-			if (_clients[client_fd] != NULL) {
-				delete _clients[client_fd];
-			}
 			_clients.erase(client_fd);
 		}
 
@@ -168,9 +161,6 @@ namespace webserv {
 		if (_socket_fds.count(triggered_fd) > 0) {
 			_socket_fds.erase(triggered_fd);
 		} else if (_clients.count(triggered_fd) > 0) {
-			if (_clients[triggered_fd] != NULL) {
-				delete _clients[triggered_fd];
-			}
 			_clients.erase(triggered_fd);
 		}
 
@@ -183,8 +173,11 @@ namespace webserv {
 	 * @brief Handle socket accept connection from client
 	 */
 	void Server::handle_accept_client(const int& socket_fd) {
-		// TODO: get client host:port here
-		int client_fd = accept(socket_fd, NULL, NULL);
+		struct sockaddr_in	client_address;
+		bzero(&client_address, sizeof(client_address));
+		socklen_t address_len= sizeof(client_address);
+
+		int client_fd = accept(socket_fd, (struct sockaddr*)&client_address, &address_len);
 
 		if (client_fd == -1) {
 			LOG_E() << "Failed to accept connection: " << std::strerror(errno) << "\n";
@@ -195,8 +188,13 @@ namespace webserv {
 
 		_iohandler.add_fd(client_fd);
 
+		if (_socket_fds.count(socket_fd) == 0) {
+			LOG_E() << "Socket fd :" << socket_fd << "somehow not in server list\n";
+			return;
+		}
+
 		if (_clients.count(client_fd) == 0) {
-			_clients[client_fd] = NULL;
+			_clients[client_fd] = Request(client_address, _socket_fds.find(socket_fd)->second);
 		} else {
 			LOG_E() << "Client fd: " << client_fd << " somehow already connected server\n";
 		}
@@ -217,24 +215,23 @@ namespace webserv {
 		buffer[bytesRead] = '\0';
 		LOG_I() << "Received a message from client fd: " << client_fd << ", message: " << buffer << "\n";
 
-		struct sockaddr_in	client;
-
 		if (_clients.count(client_fd) == 0) {
 			LOG_E() << "Client fd: " << client_fd << " somehow not added into client list\n";
 			return;
 		}
 
-		if (_clients[client_fd] == NULL) {
-			_clients[client_fd] = new Request(std::string(buffer), client);
+		if (_clients[client_fd].get_method() == -1) {
+			_clients[client_fd].init(std::string(buffer));
 		}
 
-		Request& req = *_clients[client_fd];
+		Request& req = _clients[client_fd];
 
-		if (!req.get_bytes_to_read()) {
+		if (req.get_bytes_to_read() == 0) {
 			req.set_bytes_to_read();
 		} else {
 			req.mod_bytes_to_read(bytesRead);
 			req.set_UpFile(buffer);
+
 			LOG_D() << "file delimiter is " << req.get_UpFile()->get_delimiter() << "\n";
 			LOG_D() << "file name is " << req.get_UpFile()->get_fileName() << "\n";
 		}
@@ -242,8 +239,9 @@ namespace webserv {
 		LOG_D() << req.get_method() << "\n";
 		LOG_D() << req.get_path() << "\n";
 		LOG_D() << req.get_scheme() << "\n";
+		LOG_D() << req.get_bytes_to_read() << "\n";
 
-		if (!req.get_bytes_to_read()) {
+		if (req.get_bytes_to_read() == 0) {
 			_iohandler.set_write_ready(client_fd);
 		}
 	}
@@ -257,8 +255,11 @@ namespace webserv {
 			return;
 		}
 
+		if (_clients.find(client_fd)->second.get_UpFile())
+			_clients.find(client_fd)->second.get_UpFile()->write_to_file("./test/");
+
 		Response response;
-		response.process(*_clients[client_fd]);
+		response.process(_clients[client_fd]);
 
 		int ret = send(client_fd, response.get_raw_data().c_str(), response.get_raw_data().size(), 0);
 
