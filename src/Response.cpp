@@ -1,7 +1,9 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response() : _request(0), _status_code(0) {}
+	Response::Response() : _server_configs(), _request(0), _status_code(0) {}
+
+	Response::Response(std::vector<ServerConfig> server_configs) : _server_configs(server_configs), _request(0), _status_code(0) {}
 
 	Response::~Response() {
 		if (_request != NULL) {

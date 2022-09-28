@@ -4,12 +4,14 @@
 #include <map>
 
 #include "utils.hpp"
+#include "ServerConfig.hpp"
 #include "Request.hpp"
 
 namespace webserv {
 	class Response {
 	public:
 		Response();
+		Response(std::vector<ServerConfig> server_configs);
 		~Response();
 
 		void process(const Request& request);
@@ -18,6 +20,7 @@ namespace webserv {
 		static std::string get_status_message(const int& status_code);
 
 	private:
+		std::vector<ServerConfig> _server_configs;
 		Request* _request;
 		int _status_code;
 		std::map<std::string, std::string> _fields;
