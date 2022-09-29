@@ -70,14 +70,6 @@ namespace webserv {
 			return false;
 		}
 
-		if (_root.empty()) {
-			_root = "html";
-		}
-
-		if (_index.empty()) {
-			_index = "index.html";
-		}
-
 		if (_allow_methods.empty()) {
 			size_t i = 0;
 			size_t size = sizeof(HTTPMethodStrings) / sizeof(const char*);

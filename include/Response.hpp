@@ -27,6 +27,7 @@ namespace webserv {
 		std::map<std::string, std::string> _fields;
 		std::string _response;
 		std::string _body;
+		std::string _path;
 		std::string _cgi_path;
 		ServerConfig _server_config;
 		LocationConfig _location_config;
@@ -34,7 +35,7 @@ namespace webserv {
 		bool set_server_config();
 		bool set_location_config();
 		bool set_method();
-		void run_cgi();
+		void process_cgi();
 		void process_get();
 		// void process_post();
 		// void process_delete();

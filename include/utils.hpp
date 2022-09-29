@@ -54,7 +54,8 @@ namespace webserv {
 		"DELETE",
 		"CONNECT",
 		"OPTIONS",
-		"TRACE"
+		"TRACE",
+		"UNKNOWN"
 	};
 
 	/**

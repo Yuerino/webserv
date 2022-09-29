@@ -29,7 +29,7 @@ namespace webserv {
 		}
 
 		if (!_cgi_path.empty()) {
-			return run_cgi();
+			return process_cgi();
 		}
 
 		switch (_request.get_method()) {
@@ -74,13 +74,24 @@ namespace webserv {
 	 * @return true on success otherwise false and set status code to 404
 	 */
 	bool Response::set_location_config() {
-		if (_server_config.get_locations().count(_request.get_path()) == 0) {
-			_status_code = 404;
-			return false;
+		std::string location;
+		size_t length = _request.get_path().size();
+
+		for (; length > 0; --length) {
+			location = _request.get_path().substr(0, length);
+			if (_server_config.get_locations().count(location)) {
+				_location_config = _server_config.get_locations().at(location);
+				if (_location_config.get_root().empty()) {
+					_path = _server_config.get_root() + location;
+				} else {
+					_path = _location_config.get_root() + location;
+				}
+				return true;
+			}
 		}
 
-		_location_config = _server_config.get_locations().at(_request.get_path());
-		return true;
+		_status_code = 404;
+		return false;
 	}
 
 	/**
@@ -88,13 +99,22 @@ namespace webserv {
 	 * @return true on success otherwise 405 Method not allow or ??? CGI bin not found
 	 */
 	bool Response::set_method() {
+		if (_location_config.get_allow_methods().count(HTTPMethodStrings[_request.get_method()]) == 0) {
+			_status_code = 405;
+			return false;
+		}
+
+		if (!_location_config.get_cgi_path().empty()) {
+			_cgi_path = _location_config.get_cgi_path();
+		}
+
 		return true;
 	}
 
 	/**
 	 * @brief Setup CGI data, run CGI and set CGI response
 	 */
-	void Response::run_cgi() {
+	void Response::process_cgi() {
 		_status_code = 501;
 		set_error_response();
 	}
