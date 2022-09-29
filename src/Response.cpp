@@ -1,23 +1,30 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response() : _server_configs(), _request(0), _status_code(0) {}
+	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) : _server_configs(), _request(request), _status_code(0) {
+		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
+		for (; it != server_configs.end(); ++it) {
+			if (it->get_listens().count(request.get_server_listen()) > 0)
+				_server_configs.push_back(*it);
+		}
 
-	Response::Response(std::vector<ServerConfig> server_configs) : _server_configs(server_configs), _request(0), _status_code(0) {}
-
-	Response::~Response() {
-		if (_request != NULL) {
-			delete _request;
+		if (_server_configs.empty()) {
+			_status_code = 404;
 		}
 	}
+
+	Response::~Response() {}
 
 	/**
 	 * @brief Process the request and setup the response accordingly
 	 */
-	void Response::process(const Request& request) {
-		_request = new Request(request);
+	void Response::process() {
 
-		if (!set_server_config() && !set_location_config() && !set_method()) {
+		if (_status_code != 0) {
+			return set_error_response();
+		}
+
+		if (!set_server_config() || !set_location_config() || !set_method()) {
 			return set_error_response();
 		}
 
@@ -25,7 +32,7 @@ namespace webserv {
 			return run_cgi();
 		}
 
-		switch (_request->get_method()) {
+		switch (_request.get_method()) {
 			case GET:
 				return process_get();
 			default:
@@ -41,6 +48,24 @@ namespace webserv {
 	 * @return true on success otherwise false and set status code to 400
 	 */
 	bool Response::set_server_config() {
+		if (_request.get_content().count("Host") == 0) {
+			_status_code = 400;
+			return false;
+		}
+
+		std::string host_name = _request.get_content().at("Host");
+		host_name = host_name.substr(0, host_name.find_first_of(":"));
+
+		std::vector<ServerConfig>::const_iterator s_it = _server_configs.begin();
+		std::set<std::string>::const_iterator n_it;
+		for (; s_it != _server_configs.end(); ++s_it) {
+			if (s_it->get_server_names().count(host_name) > 0) {
+				_server_config = *s_it;
+				return true;
+			}
+		}
+
+		_server_config = _server_configs.at(0);
 		return true;
 	}
 
@@ -49,6 +74,12 @@ namespace webserv {
 	 * @return true on success otherwise false and set status code to 404
 	 */
 	bool Response::set_location_config() {
+		if (_server_config.get_locations().count(_request.get_path()) == 0) {
+			_status_code = 404;
+			return false;
+		}
+
+		_location_config = _server_config.get_locations().at(_request.get_path());
 		return true;
 	}
 
