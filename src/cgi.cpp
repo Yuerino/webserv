@@ -50,8 +50,7 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 		dup2(fds[1], STDOUT_FILENO);
 		close(fds[1]);
 
-		// if post request - redirect body to stdin !!!!!
-
+		// if post request - redirect body to stdin !!!!!s
 		execve(script_name, NULL, envp);
 		LOG_E() << "CGI Error - execve() failed.\n";
 	}

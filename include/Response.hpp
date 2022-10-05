@@ -49,4 +49,7 @@ namespace webserv {
 		Response(const Response& copy); /* disabled */
 		Response& operator=(const Response&other); /* disabled */
 	};
+
 } /* namespace webserv */
+
+std::string run_cgi_script(std::map<std::string, std::string> envp_map);

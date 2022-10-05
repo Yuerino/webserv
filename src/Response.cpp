@@ -123,8 +123,9 @@ namespace webserv {
 	 */
 	void Response::process_cgi() {
 		setup_cgi_env();
-		_status_code = 501;
-		set_error_response();
+		_body = run_cgi_script(_cgi_env);
+		_status_code = 200;
+		set_response();
 	}
 
 	/**
@@ -266,8 +267,8 @@ namespace webserv {
 		_cgi_env["SERVER_PROTOCOL"] = "HTTP/1.1";
 		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
-		_cgi_env["PATH_INFO"] = rtrim(_root + _target, "/");
-		_cgi_env["PATH_TRANSLATED"] = rtrim(_root + _target, "/");
+		_cgi_env["PATH_INFO"] = _root + _target + _cgi_path;
+		_cgi_env["PATH_TRANSLATED"] = _root + _target + _cgi_path;
 		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
 		_cgi_env["QUERY_STRING"] = "";
 		char client_address[69];
