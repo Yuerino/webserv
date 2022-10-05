@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <cerrno>
 #include <cstring>
+#include <sys/stat.h>
 
 #define RED "\033[31m"
 #define GREEN "\033[32m"
@@ -84,4 +85,7 @@ namespace webserv {
 
 	std::string esc_to_string(std::string const &other);
 
+	bool isPathFile(const std::string& path);
+
+	std::string rtrim(const std::string &s, const std::string& delimiter);
 } /* namespace webserv */

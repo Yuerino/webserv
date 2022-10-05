@@ -27,10 +27,13 @@ namespace webserv {
 		std::map<std::string, std::string> _fields;
 		std::string _response;
 		std::string _body;
-		std::string _path;
+		std::string _target;
+		std::string _root;
 		std::string _cgi_path;
+		std::string _server_name;
 		ServerConfig _server_config;
 		LocationConfig _location_config;
+		std::map<std::string, std::string> _cgi_env;
 
 		bool set_server_config();
 		bool set_location_config();
@@ -41,6 +44,7 @@ namespace webserv {
 		// void process_delete();
 		void set_response();
 		void set_error_response();
+		void setup_cgi_env();
 
 		Response(const Response& copy); /* disabled */
 		Response& operator=(const Response&other); /* disabled */

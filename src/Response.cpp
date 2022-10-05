@@ -19,7 +19,6 @@ namespace webserv {
 	 * @brief Process the request and setup the response accordingly
 	 */
 	void Response::process() {
-
 		if (_status_code != 0) {
 			return set_error_response();
 		}
@@ -60,11 +59,13 @@ namespace webserv {
 		std::set<std::string>::const_iterator n_it;
 		for (; s_it != _server_configs.end(); ++s_it) {
 			if (s_it->get_server_names().count(host_name) > 0) {
+				_server_name = host_name;
 				_server_config = *s_it;
 				return true;
 			}
 		}
 
+		_server_name = *_server_configs.at(0).get_server_names().begin();
 		_server_config = _server_configs.at(0);
 		return true;
 	}
@@ -75,16 +76,22 @@ namespace webserv {
 	 */
 	bool Response::set_location_config() {
 		std::string location;
-		size_t length = _request.get_path().size();
+		std::string path = _request.get_path();
+		if (path.back() != '/') {
+			path += "/";
+		}
+		size_t length = path.size();
 
 		for (; length > 0; --length) {
-			location = _request.get_path().substr(0, length);
+			location = path.substr(0, length);
 			if (_server_config.get_locations().count(location)) {
 				_location_config = _server_config.get_locations().at(location);
+				_target = path;
+
 				if (_location_config.get_root().empty()) {
-					_path = _server_config.get_root() + location;
+					_root = _server_config.get_root();
 				} else {
-					_path = _location_config.get_root() + location;
+					_root = _location_config.get_root();
 				}
 				return true;
 			}
@@ -115,6 +122,7 @@ namespace webserv {
 	 * @brief Setup CGI data, run CGI and set CGI response
 	 */
 	void Response::process_cgi() {
+		setup_cgi_env();
 		_status_code = 501;
 		set_error_response();
 	}
@@ -123,9 +131,31 @@ namespace webserv {
 	 * @brief Process GET method and setup response
 	 */
 	void Response::process_get() {
+		std::string file_content;
+
+		LOG_D() << "GET: " << _root + _target << "\n";
+		if (isPathFile(rtrim(_root + _target, "/"))) {
+			try {
+				_body = file_to_string(rtrim(_root + _target, "/"));
+			} catch (const std::exception& e) {
+				_status_code = 403;
+			}
+		} else if (!_location_config.get_index().empty() || !_server_config.get_index().empty()) {
+			std::string index = _root + _target + (_location_config.get_index().empty() ? _server_config.get_index() : _location_config.get_index());
+
+			try {
+				_body = file_to_string(index);
+			} catch (const std::exception& e) {
+				_status_code = 404;
+			}
+		} else {
+			_status_code = 404;
+		}
+
+		if (_status_code >= 400) {
+			return set_error_response();
+		}
 		_status_code = 200;
-		_body = file_to_string("./html/post.html");
-		// _body = "<html><body><h1>Hello World</h1><body></html>";
 		set_response();
 	}
 
@@ -144,7 +174,7 @@ namespace webserv {
 		_response += CRLF;
 
 		_response += "Server: ";
-		_response += "webserv v6.9";
+		_response += "webserv/6.9";
 		_response += CRLF;
 
 		_response += "Connection: close";
@@ -227,5 +257,25 @@ namespace webserv {
 				return "Not Implemented";
 		}
 		return "Not Implemented";
+	}
+
+	void Response::setup_cgi_env() {
+		_cgi_env["SERVER_SOFTWARE"] = "webserv/6.9";
+		_cgi_env["SERVER_NAME"] = _server_name;
+		_cgi_env["GATEWAY_INTERFACE"] = "CGI/1.1";
+		_cgi_env["SERVER_PROTOCOL"] = "HTTP/1.1";
+		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
+		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
+		_cgi_env["PATH_INFO"] = rtrim(_root + _target, "/");
+		_cgi_env["PATH_TRANSLATED"] = rtrim(_root + _target, "/");
+		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
+		_cgi_env["QUERY_STRING"] = "";
+		char client_address[69];
+		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
+		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
+		_cgi_env["AUTH_TYPE"] = "";
+		_cgi_env["REMOTE_USER"] = "";
+		_cgi_env["CONTENT_TYPE"] = "";
+		_cgi_env["CONTENT_LENGTH"] = "";
 	}
 } /* namespace webserv */

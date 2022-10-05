@@ -151,4 +151,24 @@ namespace webserv {
 		}
 		return (res);
 	}
+
+	bool isPathFile(const std::string& path) {
+		struct stat s;
+		if (stat(path.c_str(), &s) == -1) {
+			return false;
+		}
+
+		if (S_ISREG(s.st_mode)) {
+			return true;
+		} else if (S_ISDIR(s.st_mode)) {
+			return false;
+		}
+
+		return false;
+	}
+
+	std::string rtrim(const std::string &s, const std::string& delimiter) {
+		size_t end = s.find_last_not_of(delimiter);
+		return (end == std::string::npos) ? s : s.substr(0, end + 1);
+	}
 } /* namespace webserv */
