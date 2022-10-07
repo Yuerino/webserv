@@ -177,10 +177,10 @@ namespace webserv
 			_bytes_to_read -= mod;
 	}
 
-	void				Request::set_UpFile(std::string buffer)
+	void				Request::set_UpFile(char *buf, size_t n)
 	{
 		if (!_file_to_upload)
 			_file_to_upload = new UpFile;
-		_file_to_upload->parse_fileStream(buffer);
+		_file_to_upload->append_buf(buf, n);
 	}
 }

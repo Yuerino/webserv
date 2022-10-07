@@ -89,7 +89,7 @@ namespace webserv
 			void						assign_content(std::string const &src);
 			void						set_bytes_to_read(void);
 			void						mod_bytes_to_read(int mod);
-			void						set_UpFile(std::string buffer);
+			void						set_UpFile(char *buf, size_t n);
 	};
 }
 

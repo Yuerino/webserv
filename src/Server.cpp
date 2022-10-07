@@ -231,7 +231,7 @@ namespace webserv {
 			req.set_bytes_to_read();
 		} else {
 			req.mod_bytes_to_read(bytesRead);
-			req.set_UpFile(buffer);
+			req.set_UpFile(buffer, bytesRead);
 
 			LOG_D() << "file delimiter is " << req.get_UpFile()->get_delimiter() << "\n";
 			LOG_D() << "file name is " << req.get_UpFile()->get_fileName() << "\n";
