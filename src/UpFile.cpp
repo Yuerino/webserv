@@ -57,30 +57,42 @@ namespace webserv
 
 	void				UpFile::parse_fileStream(void)
 	{
-		std::string	del_key("\r\n\r\n");
-		int pos = _buffer.find("\r\n");
-		set_delimiter(_buffer.substr(0, pos));
-		std::string disposition_key("Content-Disposition:");
-		std::string sub_buf(_buffer.substr(_buffer.find(disposition_key) + disposition_key.size(), _buffer.find("\r\n", _buffer.find(disposition_key) + disposition_key.size()) - (_buffer.find(disposition_key) + disposition_key.size())));
-		std::string file_key("filename=\"");
-		set_fileName(sub_buf.substr(sub_buf.find(file_key) + file_key.size(), sub_buf.size() - (sub_buf.find(file_key) + file_key.size() + 1))); // unsafe - testing purposes
-		_fileContent = _buffer.substr(_buffer.find("\r\n\r\n") + 4, (_buffer.rfind(_delimiter) - 2) - (_buffer.find("\r\n\r\n") + 4));
+		set_delimiter(_buffer.substr(0, _buffer.find("\r\n")));
+		while (_buffer.compare("--\r\n"))
+		{
+			std::string disposition_key("Content-Disposition:");
+			std::string file_key("filename=\"");
+			std::string file_name;
+			std::string file_content;
+			std::string sub_buf(_buffer.substr(_buffer.find(disposition_key) + disposition_key.size(), _buffer.find("\r\n", _buffer.find(disposition_key) + disposition_key.size()) - (_buffer.find(disposition_key) + disposition_key.size())));
+			size_t begin(_buffer.find("\r\n\r\n") + 4);
+			size_t end(_buffer.find(_delimiter, begin) - 2);
+			file_name = sub_buf.substr(sub_buf.find(file_key) + file_key.size(), sub_buf.size() - (sub_buf.find(file_key) + file_key.size() + 1));
+			file_content = _buffer.substr(begin, end - begin);
+			_files[file_name] = file_content;
+			_buffer.erase(0, end + 2 + _delimiter.size());
+		}
 	}
 
 	void				UpFile::write_to_file(std::string const &path)
 	{
 		std::ofstream dest_file;
 		parse_fileStream();
-		try
+		std::map<std::string, std::string>::iterator it = _files.begin();
+		while (it != _files.end())
 		{
-			dest_file.open(std::string(path + _fileName).c_str(), std::ios::binary);
+			try
+			{
+				dest_file.open(std::string(path + it->first).c_str(), std::ios::binary);
+			}
+			catch(const std::exception& e)
+			{
+				return ;
+			}
+			dest_file << it->second;
+			dest_file.close();
+			it++;
 		}
-		catch(const std::exception& e)
-		{
-			return ;
-		}
-		dest_file << _fileContent;
-		dest_file.close();
 	}
 
 
