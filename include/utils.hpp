@@ -88,4 +88,6 @@ namespace webserv {
 	bool isPathFile(const std::string& path);
 
 	std::string rtrim(const std::string &s, const std::string& delimiter);
+
+	std::string get_mime_type(const std::string& type);
 } /* namespace webserv */

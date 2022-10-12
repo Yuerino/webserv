@@ -35,6 +35,7 @@ namespace webserv {
 		ServerConfig _server_config;
 		LocationConfig _location_config;
 		std::map<std::string, std::string> _cgi_env;
+		bool _autoindex;
 
 		bool set_server_config();
 		bool set_location_config();

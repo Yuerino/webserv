@@ -1,7 +1,12 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) : _server_configs(), _request(request), _status_code(0) {
+	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) :
+		_server_configs(),
+		_request(request),
+		_status_code(0) {
+		_autoindex = false;
+
 		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
 		for (; it != server_configs.end(); ++it) {
 			if (it->get_listens().count(request.get_server_listen()) > 0)
@@ -141,14 +146,14 @@ namespace webserv {
 	void Response::process_get() {
 		std::string file_content;
 
-		LOG_D() << "GET: " << _root + _target << "\n";
-		if (isPathFile(rtrim(_root + _target, "/"))) {
+		if (isPathFile(_root + _target)) {
 			try {
 				_body = file_to_string(rtrim(_root + _target, "/"));
 			} catch (const std::exception& e) {
 				_status_code = 403;
 			}
 		} else if (_location_config.get_autoindex()) {
+			_autoindex = true;
 			set_autoindex_body();
 		} else {
 			std::string index = _root + _target + (_location_config.get_index().empty() ? _server_config.get_index() : _location_config.get_index());
@@ -193,10 +198,17 @@ namespace webserv {
 		_response += to_string(_body.length());
 		_response += CRLF;
 
-		// TODO: MIME types
-		_response += "Content-Type: ";
-		_response += "text/html";
-		_response += CRLF;
+		if (_request.get_method() == GET) {
+			_response += "Content-Type: ";
+			if (_autoindex)
+				_response += "text/html";
+			else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
+				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
+			} else {
+				_response += "text/plain";
+			}
+			_response += CRLF;
+		}
 
 		_response += CRLF;
 		_response += _body;
