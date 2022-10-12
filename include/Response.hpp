@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <dirent.h>
 
 #pragma once
 
@@ -45,6 +46,7 @@ namespace webserv {
 		void set_response();
 		void set_error_response();
 		void setup_cgi_env();
+		void set_autoindex_body();
 
 		Response(const Response& copy); /* disabled */
 		Response& operator=(const Response&other); /* disabled */

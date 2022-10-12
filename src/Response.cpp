@@ -17,33 +17,38 @@ namespace webserv {
 
 	/**
 	 * @brief Process the request and setup the response accordingly
+	 * @note In case of unexpected exception, set status code to 500
 	 */
 	void Response::process() {
 		if (_status_code != 0) {
 			return set_error_response();
 		}
 
-		if (!set_server_config() || !set_location_config() || !set_method()) {
-			return set_error_response();
-		}
+		try {
+			if (!set_server_config() || !set_location_config() || !set_method()) {
+				return set_error_response();
+			}
 
-		if (!_cgi_path.empty()) {
-			return process_cgi();
-		}
+			if (!_cgi_path.empty()) {
+				return process_cgi();
+			}
 
-		switch (_request.get_method()) {
-			case GET:
-				return process_get();
-			default:
-				_status_code = 400;
-				break;
+			switch (_request.get_method()) {
+				case GET:
+					return process_get();
+				default:
+					_status_code = 400;
+					break;
+			}
+		} catch (const std::exception& e) {
+			_status_code = 500;
 		}
 
 		set_error_response();
 	}
 
 	/**
-	 * @brief Set server config accordingly with host header
+	 * @brief Set server config and server name accordingly with host header
 	 * @return true on success otherwise false and set status code to 400
 	 */
 	bool Response::set_server_config() {
@@ -71,7 +76,7 @@ namespace webserv {
 	}
 
 	/**
-	 * @brief Set location config accordingly with server config and request URI
+	 * @brief Set location config, path, target accordingly with server config and request URI
 	 * @return true on success otherwise false and set status code to 404
 	 */
 	bool Response::set_location_config() {
@@ -102,8 +107,8 @@ namespace webserv {
 	}
 
 	/**
-	 * @brief Check and set method or setup cgi
-	 * @return true on success otherwise 405 Method not allow or ??? CGI bin not found
+	 * @brief Check and set method or check and set cgi path
+	 * @return true on success otherwise 405 Method not allow or 404 CGI bin not found
 	 */
 	bool Response::set_method() {
 		if (_location_config.get_allow_methods().count(HTTPMethodStrings[_request.get_method()]) == 0) {
@@ -114,6 +119,8 @@ namespace webserv {
 		if (!_location_config.get_cgi_path().empty()) {
 			_cgi_path = _location_config.get_cgi_path();
 		}
+
+		// TODO: check cgi path here
 
 		return true;
 	}
@@ -141,7 +148,9 @@ namespace webserv {
 			} catch (const std::exception& e) {
 				_status_code = 403;
 			}
-		} else if (!_location_config.get_index().empty() || !_server_config.get_index().empty()) {
+		} else if (_location_config.get_autoindex()) {
+			set_autoindex_body();
+		} else {
 			std::string index = _root + _target + (_location_config.get_index().empty() ? _server_config.get_index() : _location_config.get_index());
 
 			try {
@@ -149,13 +158,12 @@ namespace webserv {
 			} catch (const std::exception& e) {
 				_status_code = 404;
 			}
-		} else {
-			_status_code = 404;
 		}
 
 		if (_status_code >= 400) {
 			return set_error_response();
 		}
+
 		_status_code = 200;
 		set_response();
 	}
@@ -198,6 +206,7 @@ namespace webserv {
 	 * @brief Set the response body and header for error status code
 	 */
 	void Response::set_error_response() {
+		// TODO: custom error page from config file
 		_body = "<html>\n";
 
 		_body += "<head><title>";
@@ -211,6 +220,36 @@ namespace webserv {
 		_body += "</html>";
 
 		set_response();
+	}
+
+	/**
+	 * @brief Setup autoindex body
+	 */
+	void Response::set_autoindex_body() {
+		std::string path = rtrim(_root + _target, "/");
+
+		struct dirent* file = NULL;
+		DIR *dir = opendir(path.c_str());
+		if (dir == NULL) {
+			_status_code = 500;
+			return;
+		}
+
+		_body = "<html>\n";
+		_body += "<head><title>" + path + "</title></head>\n";
+		_body += "<body>\n";
+		_body += "<h1>index of " + path + "</h1>\n";
+
+		file = readdir(dir);
+		while (file != NULL) {
+			std::string file_name(file->d_name);
+			_body += "<p><a href=\"http://" + _request.get_content().at("Host") + rtrim(_target, "/") + "/" + file_name + "\">" + file_name + "</a></p>";
+			file = readdir(dir);
+		}
+
+		_body += "</body>\n";
+		_body += "</html>";
+		closedir(dir);
 	}
 
 	/* Getter */

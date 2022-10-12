@@ -6,22 +6,25 @@ namespace webserv {
 		_root(),
 		_index(),
 		_allow_methods(),
-		_cgi_path() {}
+		_cgi_path(),
+		_autoindex(false) {}
 
 	LocationConfig::LocationConfig(const LocationConfig& copy) :
-		_location(copy.get_location()),
-		_root(copy.get_root()),
-		_index(copy.get_index()),
-		_allow_methods(copy.get_allow_methods()),
-		_cgi_path(copy.get_cgi_path()) {}
+		_location(copy._location),
+		_root(copy._root),
+		_index(copy._index),
+		_allow_methods(copy._allow_methods),
+		_cgi_path(copy._cgi_path),
+		_autoindex(copy._autoindex) {}
 
 	LocationConfig& LocationConfig::operator=(const LocationConfig& other) {
 		if (this == &other) { return *this; }
-		_location = other.get_location();
-		_root = other.get_root();
-		_index = other.get_index();
-		_allow_methods = other.get_allow_methods();
-		_cgi_path = other.get_cgi_path();
+		_location = other._location;
+		_root = other._root;
+		_index = other._index;
+		_allow_methods = other._allow_methods;
+		_cgi_path = other._cgi_path;
+		_autoindex = other._autoindex;
 		return *this;
 	}
 
@@ -36,6 +39,7 @@ namespace webserv {
 		types.insert("index");
 		types.insert("allow_methods");
 		types.insert("cgi_path");
+		types.insert("autoindex");
 	}
 
 	/**
@@ -54,6 +58,8 @@ namespace webserv {
 			return add_allow_methods(value);
 		} else if (type == "cgi_path" && _cgi_path.empty()) {
 			_cgi_path = value;
+		} else if (type == "autoindex") {
+			return set_autoindex(value);
 		} else {
 			return false;
 		}
@@ -101,12 +107,28 @@ namespace webserv {
 		return _allow_methods.insert(method).second;
 	}
 
+	/**
+	 * @brief Check autoindex is valid and set it
+	 */
+	bool LocationConfig::set_autoindex(const std::string& value) {
+		if (value == "on") {
+			_autoindex = true;
+			return true;
+		} else if (value == "off") {
+			_autoindex = false;
+			return true;
+		}
+
+		return false;
+	}
+
 	/* Getters */
 	const std::string& LocationConfig::get_location() const { return _location; }
 	const std::string& LocationConfig::get_root() const { return _root; }
 	const std::string& LocationConfig::get_index() const { return _index; }
 	const std::set<std::string>& LocationConfig::get_allow_methods() const { return _allow_methods; }
 	const std::string& LocationConfig::get_cgi_path() const { return _cgi_path; }
+	const bool& LocationConfig::get_autoindex() const { return _autoindex; }
 
 #ifdef PARSER_DEBUG
 	std::ostream& operator<<(std::ostream& os, const LocationConfig& location_config) {
