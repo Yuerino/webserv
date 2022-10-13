@@ -37,6 +37,7 @@ namespace webserv {
 		std::map<std::string, std::string> _cgi_env;
 		bool _autoindex;
 		std::string _redirect;
+		bool _is_custom_error_page;
 
 		bool set_server_config();
 		bool set_location_config();

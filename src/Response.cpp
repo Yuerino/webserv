@@ -6,6 +6,7 @@ namespace webserv {
 		_request(request),
 		_status_code(0) {
 		_autoindex = false;
+		_is_custom_error_page = false;
 
 		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
 		for (; it != server_configs.end(); ++it) {
@@ -165,7 +166,7 @@ namespace webserv {
 			} catch (const std::exception& e) {
 				_status_code = 403;
 			}
-		} else if (_location_config.get_autoindex()) {
+		} else if (_location_config.get_autoindex() && rtrim(_location_config.get_location(), "/") == rtrim(_target, "/")) {
 			_autoindex = true;
 			set_autoindex_body();
 		} else {
@@ -223,7 +224,7 @@ namespace webserv {
 
 		if (_request.get_method() == GET) {
 			_response += "Content-Type: ";
-			if (_autoindex || (_status_code >= 400 && _status_code < 600)) {
+			if (_autoindex || (_status_code >= 400 && _status_code < 600 && !_is_custom_error_page)) {
 				_response += "text/html";
 			} else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
 				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
@@ -241,7 +242,15 @@ namespace webserv {
 	 * @brief Set the response body and header for error status code
 	 */
 	void Response::set_error_response() {
-		// TODO: custom error page from config file
+		if (_server_config.get_error_pages().count(to_string(_status_code))) {
+			_target = _root + _server_config.get_error_pages().at(to_string(_status_code));
+			try {
+				_body = file_to_string(_target);
+				_is_custom_error_page = true;
+				return set_response();
+			} catch (const std::exception& e) { (void)e; }
+		}
+
 		_body = "<html>\n";
 
 		_body += "<head><title>";

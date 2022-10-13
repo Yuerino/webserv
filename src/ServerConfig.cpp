@@ -119,7 +119,7 @@ namespace webserv {
 		}
 
 		if (_root.empty()) {
-			_root = "html";
+			_root = "./html";
 		}
 
 		if (_index.empty()) {
