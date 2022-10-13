@@ -42,8 +42,8 @@ namespace webserv {
 		bool set_method();
 		void process_cgi();
 		void process_get();
-		// void process_post();
-		// void process_delete();
+		void process_post();
+		void process_delete();
 		void set_response();
 		void set_error_response();
 		void setup_cgi_env();

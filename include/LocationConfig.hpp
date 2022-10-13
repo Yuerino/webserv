@@ -25,6 +25,7 @@ namespace webserv {
 		const std::set<std::string>& get_allow_methods() const;
 		const std::string& get_cgi_path() const;
 		const bool& get_autoindex() const;
+		const int& get_client_body_buffer_size() const;
 
 	private:
 		std::string				_location;
@@ -33,6 +34,7 @@ namespace webserv {
 		std::set<std::string>	_allow_methods;
 		std::string				_cgi_path;
 		bool					_autoindex;
+		int						_client_body_buffer_size;
 
 		bool add_allow_methods(const std::string& method);
 		bool set_autoindex(const std::string& value);

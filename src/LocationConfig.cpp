@@ -7,7 +7,8 @@ namespace webserv {
 		_index(),
 		_allow_methods(),
 		_cgi_path(),
-		_autoindex(false) {}
+		_autoindex(false),
+		_client_body_buffer_size(-1) {}
 
 	LocationConfig::LocationConfig(const LocationConfig& copy) :
 		_location(copy._location),
@@ -15,7 +16,8 @@ namespace webserv {
 		_index(copy._index),
 		_allow_methods(copy._allow_methods),
 		_cgi_path(copy._cgi_path),
-		_autoindex(copy._autoindex) {}
+		_autoindex(copy._autoindex),
+		_client_body_buffer_size(copy._client_body_buffer_size) {}
 
 	LocationConfig& LocationConfig::operator=(const LocationConfig& other) {
 		if (this == &other) { return *this; }
@@ -25,6 +27,7 @@ namespace webserv {
 		_allow_methods = other._allow_methods;
 		_cgi_path = other._cgi_path;
 		_autoindex = other._autoindex;
+		_client_body_buffer_size = other._client_body_buffer_size;
 		return *this;
 	}
 
@@ -60,6 +63,8 @@ namespace webserv {
 			_cgi_path = value;
 		} else if (type == "autoindex") {
 			return set_autoindex(value);
+		} else if (type == "client_body_buffer_size" && _client_body_buffer_size == -1) {
+			_client_body_buffer_size = std::atoi(value.c_str());
 		} else {
 			return false;
 		}
@@ -129,6 +134,7 @@ namespace webserv {
 	const std::set<std::string>& LocationConfig::get_allow_methods() const { return _allow_methods; }
 	const std::string& LocationConfig::get_cgi_path() const { return _cgi_path; }
 	const bool& LocationConfig::get_autoindex() const { return _autoindex; }
+	const int& LocationConfig::get_client_body_buffer_size() const { return _client_body_buffer_size; }
 
 #ifdef PARSER_DEBUG
 	std::ostream& operator<<(std::ostream& os, const LocationConfig& location_config) {

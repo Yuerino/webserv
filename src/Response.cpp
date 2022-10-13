@@ -34,6 +34,8 @@ namespace webserv {
 				return set_error_response();
 			}
 
+			// TODO: http redirect
+
 			if (!_cgi_path.empty()) {
 				return process_cgi();
 			}
@@ -41,6 +43,10 @@ namespace webserv {
 			switch (_request.get_method()) {
 				case GET:
 					return process_get();
+				case POST:
+					return process_post();
+				case DELETE:
+					return process_delete();
 				default:
 					_status_code = 400;
 					break;
@@ -171,6 +177,16 @@ namespace webserv {
 
 		_status_code = 200;
 		set_response();
+	}
+
+	void Response::process_post() {
+		_status_code = 501;
+		set_error_response();
+	}
+
+	void Response::process_delete() {
+		_status_code = 501;
+		set_error_response();
 	}
 
 	/**
