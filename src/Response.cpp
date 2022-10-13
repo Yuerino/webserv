@@ -97,7 +97,7 @@ namespace webserv {
 	bool Response::set_location_config() {
 		std::string location;
 		std::string path = _request.get_path();
-		if (path.back() != '/') {
+		if (path.at(path.size() - 1) != '/') {
 			path += "/";
 		}
 		size_t length = path.size();
@@ -135,7 +135,10 @@ namespace webserv {
 			_cgi_path = _location_config.get_cgi_path();
 		}
 
-		// TODO: check cgi path here
+		if (access((_root + _location_config.get_location() + _cgi_path).c_str(), X_OK) == -1) {
+			_status_code = 404;
+			return false;
+		}
 
 		return true;
 	}

@@ -255,8 +255,8 @@ namespace webserv {
 			return;
 		}
 
-		if (_clients[client_fd].get_UpFile())
-			_clients[client_fd].get_UpFile()->write_to_file("./test/");
+		// if (_clients[client_fd].get_UpFile())
+		// 	_clients[client_fd].get_UpFile()->write_to_file("./test/");
 
 		Response response(_server_configs, _clients[client_fd]);
 		response.process();

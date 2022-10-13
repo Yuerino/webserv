@@ -4,6 +4,7 @@
 
 #include <map>
 #include "utils.hpp"
+#include <sys/wait.h>
 
 #define ENVP_COUNT_MAX 1024
 
@@ -51,8 +52,10 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 		close(fds[1]);
 
 		// if post request - redirect body to stdin !!!!!s
-		execve(script_name, NULL, envp);
+		char *args[] = {(char *)script_name, NULL};
+		execve(script_name, args, envp);
 		LOG_E() << "CGI Error - execve() failed.\n";
+		// TODO: handle this error
 	}
 	else if (pid > 0) // parent
 	{
