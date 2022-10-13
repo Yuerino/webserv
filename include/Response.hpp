@@ -36,6 +36,7 @@ namespace webserv {
 		LocationConfig _location_config;
 		std::map<std::string, std::string> _cgi_env;
 		bool _autoindex;
+		std::string _redirect;
 
 		bool set_server_config();
 		bool set_location_config();
@@ -48,6 +49,7 @@ namespace webserv {
 		void set_error_response();
 		void setup_cgi_env();
 		void set_autoindex_body();
+		void set_redirect_response();
 
 		Response(const Response& copy); /* disabled */
 		Response& operator=(const Response&other); /* disabled */

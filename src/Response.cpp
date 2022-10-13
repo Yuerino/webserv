@@ -34,7 +34,11 @@ namespace webserv {
 				return set_error_response();
 			}
 
-			// TODO: http redirect
+			if (!_location_config.get_redirect().empty()) {
+				_status_code = 302;
+				_redirect = rtrim(_location_config.get_redirect(), "/") + _target.substr(rtrim(_location_config.get_location(), "/").length());
+				return set_redirect_response();
+			}
 
 			if (!_cgi_path.empty()) {
 				return process_cgi();
@@ -171,7 +175,7 @@ namespace webserv {
 			}
 		}
 
-		if (_status_code >= 400) {
+		if (_status_code >= 400 && _status_code < 600) {
 			return set_error_response();
 		}
 
@@ -216,9 +220,9 @@ namespace webserv {
 
 		if (_request.get_method() == GET) {
 			_response += "Content-Type: ";
-			if (_autoindex)
+			if (_autoindex || (_status_code >= 400 && _status_code < 600)) {
 				_response += "text/html";
-			else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
+			} else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
 				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
 			} else {
 				_response += "text/plain";
@@ -280,6 +284,33 @@ namespace webserv {
 		closedir(dir);
 	}
 
+	/**
+	 * @brief Setup redirect response header
+	 */
+	void Response::set_redirect_response() {
+		_response = "HTTP/1.1 ";
+		_response += to_string(_status_code);
+		_response += " " + get_status_message(_status_code);
+		_response += CRLF;
+
+		_response += "Date: ";
+		_response += get_current_time("%a, %d %b %Y %H:%M:%S %Z");
+		_response += CRLF;
+
+		_response += "Server: ";
+		_response += "webserv/6.9";
+		_response += CRLF;
+
+		_response += "Connection: close";
+		_response += CRLF;
+
+		_response += "Location: ";
+		_response += _redirect;
+		_response += CRLF;
+
+		_response += CRLF;
+	}
+
 	/* Getter */
 	const std::string& Response::get_raw_data() const {
 		return _response;
@@ -297,6 +328,14 @@ namespace webserv {
 				return "Created";
 			case 202:
 				return "Accepted";
+			case 300:
+				return "Multiple Choices";
+			case 301:
+				return "Moved Permanently";
+			case 302:
+				return "Found";
+			case 303:
+				return "See Other";
 			case 400:
 				return "Bad Request";
 			case 401:
