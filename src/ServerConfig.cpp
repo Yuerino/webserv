@@ -23,24 +23,30 @@ namespace webserv {
 		_root(),
 		_index(),
 		_allow_methods(),
-		_locations() {}
+		_locations(),
+		_client_body_buffer_size(-1),
+		_error_pages() {}
 
 	ServerConfig::ServerConfig(const ServerConfig& copy) :
-		_server_names(copy.get_server_names()),
-		_listens(copy.get_listens()),
-		_root(copy.get_root()),
-		_index(copy.get_index()),
-		_allow_methods(copy.get_allow_methods()),
-		_locations(copy.get_locations()) {}
+		_server_names(copy._server_names),
+		_listens(copy._listens),
+		_root(copy._root),
+		_index(copy._index),
+		_allow_methods(copy._allow_methods),
+		_locations(copy._locations),
+		_client_body_buffer_size(copy._client_body_buffer_size),
+		_error_pages(copy._error_pages) {}
 
 	ServerConfig& ServerConfig::operator=(const ServerConfig& other) {
 		if (this == &other) { return *this; }
-		_server_names = other.get_server_names();
-		_listens = other.get_listens();
-		_root = other.get_root();
-		_index = other.get_index();
-		_allow_methods = other.get_allow_methods();
-		_locations = other.get_locations();
+		_server_names = other._server_names;
+		_listens = other._listens;
+		_root = other._root;
+		_index = other._index;
+		_allow_methods = other._allow_methods;
+		_locations = other._locations;
+		_client_body_buffer_size = other._client_body_buffer_size;
+		_error_pages = other._error_pages;
 		return *this;
 	}
 
@@ -56,6 +62,8 @@ namespace webserv {
 		types.insert("index");
 		types.insert("allow_methods");
 		types.insert("location");
+		types.insert("client_body_buffer_size");
+		types.insert("error_page");
 	}
 
 	/**
@@ -74,6 +82,10 @@ namespace webserv {
 			_index = value;
 		} else if (type == "allow_methods") {
 			return add_allow_methods(value);
+		} else if (type == "client_body_buffer_size" && _client_body_buffer_size == -1 && is_digits(value)) {
+			_client_body_buffer_size = std::atoi(value.c_str());
+		} else if (type == "error_page") {
+			return add_error_page(value);
 		} else {
 			return false;
 		}
@@ -124,6 +136,10 @@ namespace webserv {
 		}
 
 		if (_locations.empty()) {
+			return false;
+		}
+
+		if (!_error_pages.empty() && _error_pages.begin()->second.empty()) {
 			return false;
 		}
 
@@ -183,6 +199,36 @@ namespace webserv {
 		return _listens.insert(listen).second;
 	}
 
+	/**
+	 * @brief Check and add error_page to error_pages
+	 */
+	bool ServerConfig::add_error_page(const std::string& value) {
+		if (!_error_pages.empty() && !_error_pages.begin()->second.empty()) {
+			return false;
+		}
+
+		if (is_digits(value)) {
+			int code = std::atoi(value.c_str());
+
+			if (code >= 400 && code < 600) {
+				return _error_pages.insert(std::make_pair(value, "")).second;
+			}
+
+			return false;
+		}
+
+		if (_error_pages.empty()) {
+			return false;
+		}
+
+		std::map<std::string, std::string>::iterator it = _error_pages.begin();
+		for(; it != _error_pages.end(); ++it) {
+			it->second = value;
+		}
+
+		return true;
+	}
+
 	/* Getters */
 	const std::set<std::string>& ServerConfig::get_server_names() const { return _server_names; }
 	const std::set<Listen>& ServerConfig::get_listens() const { return _listens; }
@@ -190,6 +236,8 @@ namespace webserv {
 	const std::string& ServerConfig::get_index() const { return _index; }
 	const std::set<std::string>& ServerConfig::get_allow_methods() const { return _allow_methods; }
 	const std::map<std::string, LocationConfig>& ServerConfig::get_locations() const { return _locations; }
+	const int& ServerConfig::get_client_body_buffer_size() const { return _client_body_buffer_size; }
+	const std::map<std::string, std::string>& ServerConfig::get_error_pages() const { return _error_pages; }
 
 #ifdef PARSER_DEBUG
 	std::ostream& operator<<(std::ostream& os, const ServerConfig& server_config) {

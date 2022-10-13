@@ -7,8 +7,9 @@ namespace webserv {
 		_index(),
 		_allow_methods(),
 		_cgi_path(),
+		_cgi_extension(),
 		_autoindex(false),
-		_client_body_buffer_size(-1) {}
+		_redirect() {}
 
 	LocationConfig::LocationConfig(const LocationConfig& copy) :
 		_location(copy._location),
@@ -16,8 +17,9 @@ namespace webserv {
 		_index(copy._index),
 		_allow_methods(copy._allow_methods),
 		_cgi_path(copy._cgi_path),
+		_cgi_extension(copy._cgi_extension),
 		_autoindex(copy._autoindex),
-		_client_body_buffer_size(copy._client_body_buffer_size) {}
+		_redirect(copy._redirect) {}
 
 	LocationConfig& LocationConfig::operator=(const LocationConfig& other) {
 		if (this == &other) { return *this; }
@@ -26,8 +28,9 @@ namespace webserv {
 		_index = other._index;
 		_allow_methods = other._allow_methods;
 		_cgi_path = other._cgi_path;
+		_cgi_extension = other._cgi_extension;
 		_autoindex = other._autoindex;
-		_client_body_buffer_size = other._client_body_buffer_size;
+		_redirect = other._redirect;
 		return *this;
 	}
 
@@ -42,7 +45,9 @@ namespace webserv {
 		types.insert("index");
 		types.insert("allow_methods");
 		types.insert("cgi_path");
+		types.insert("cgi_extension");
 		types.insert("autoindex");
+		types.insert("redirect");
 	}
 
 	/**
@@ -61,10 +66,12 @@ namespace webserv {
 			return add_allow_methods(value);
 		} else if (type == "cgi_path" && _cgi_path.empty()) {
 			_cgi_path = value;
+		} else if (type == "cgi_extension" && _cgi_extension.empty()) {
+			_cgi_extension = value;
 		} else if (type == "autoindex") {
 			return set_autoindex(value);
-		} else if (type == "client_body_buffer_size" && _client_body_buffer_size == -1) {
-			_client_body_buffer_size = std::atoi(value.c_str());
+		} else if (type == "redirect" && _redirect.empty()) {
+			_redirect = value;
 		} else {
 			return false;
 		}
@@ -134,7 +141,8 @@ namespace webserv {
 	const std::set<std::string>& LocationConfig::get_allow_methods() const { return _allow_methods; }
 	const std::string& LocationConfig::get_cgi_path() const { return _cgi_path; }
 	const bool& LocationConfig::get_autoindex() const { return _autoindex; }
-	const int& LocationConfig::get_client_body_buffer_size() const { return _client_body_buffer_size; }
+	const std::string& LocationConfig::get_cgi_extension() const { return _cgi_extension; }
+	const std::string& LocationConfig::get_redirect() const { return _redirect; }
 
 #ifdef PARSER_DEBUG
 	std::ostream& operator<<(std::ostream& os, const LocationConfig& location_config) {
