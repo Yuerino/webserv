@@ -151,4 +151,164 @@ namespace webserv {
 		}
 		return (res);
 	}
+
+	/**
+	 * @brief Check if path is a file or not
+	 */
+	bool isPathFile(const std::string& str) {
+		std::string path(rtrim(str, "/"));
+
+		struct stat path_info;
+		if (stat(path.c_str(), &path_info) == -1) {
+			return false;
+		}
+
+		if (S_ISREG(path_info.st_mode)) {
+			return true;
+		} else if (S_ISDIR(path_info.st_mode)) {
+			return false;
+		}
+
+		return false;
+	}
+
+	/**
+	 * @brief Trim string from right side
+	 */
+	std::string rtrim(const std::string &s, const std::string& delimiter) {
+		size_t end = s.find_last_not_of(delimiter);
+		return (end == std::string::npos) ? s : s.substr(0, end + 1);
+	}
+
+	/**
+	 * @brief Get correct mime type from extension
+	 */
+	std::string get_mime_type(const std::string& type) {
+		if (type == ".aac")
+			return "audio/aac";
+		else if (type == ".abw")
+			return "application/x-abiword";
+		else if (type == ".arc")
+			return "application/octet-stream";
+		else if (type == ".avi")
+			return "video/x-msvideo";
+		else if (type == "avif")
+			return "image/avif";
+		else if (type == ".azw")
+			return "application/vnd.amazon.ebook";
+		else if (type == ".bin")
+			return "application/octet-stream";
+		else if (type == ".bmp")
+			return "image/bmp";
+		else if (type == ".bz")
+			return "application/x-bzip";
+		else if (type == ".bz2")
+			return "application/x-bzip2";
+		else if (type == ".cda")
+			return "application/x-cdf";
+		else if (type == ".csh")
+			return "application/x-csh";
+		else if (type == ".css")
+			return "text/css";
+		else if (type == ".csv")
+			return "text/csv";
+		else if (type == ".doc")
+			return "application/msword";
+		else if (type == ".epub")
+			return "application/epub+zip";
+		else if (type == ".gif")
+			return "image/gif";
+		else if (type == ".htm")
+			return "text/html";
+		else if (type == ".html")
+			return "text/html";
+		else if (type == ".ico")
+			return "image/x-icon";
+		else if (type == ".ics")
+			return "text/calendar";
+		else if (type == ".jar")
+			return "application/java-archive";
+		else if (type == ".jpeg")
+			return "image/jpeg";
+		else if (type == ".jpg")
+			return "image/jpeg";
+		else if (type == ".js")
+			return "application/js";
+		else if (type == ".json")
+			return "application/json";
+		else if (type == ".mid")
+			return "audio/midi";
+		else if (type == ".midi")
+			return "audio/midi";
+		else if (type == ".mpeg")
+			return "video/mpeg";
+		else if (type == ".mpkg")
+			return "application/vnd.apple.installer+xml";
+		else if (type == ".odp")
+			return "application/vnd.oasis.opendocument.presentation";
+		else if (type == ".ods")
+			return "application/vnd.oasis.opendocument.spreadsheet";
+		else if (type == ".odt")
+			return "application/vnd.oasis.opendocument.text";
+		else if (type == ".oga")
+			return "audio/ogg";
+		else if (type == ".ogv")
+			return "video/ogg";
+		else if (type == ".ogx")
+			return "application/ogg";
+		else if (type == ".pdf")
+			return "application/pdf";
+		else if (type == ".png")
+			return "image/png";
+		else if (type == ".ppt")
+			return "application/vnd.ms-powerpoint";
+		else if (type == ".rar")
+			return "application/x-rar-compressed";
+		else if (type == ".rtf")
+			return "application/rtf";
+		else if (type == ".sh")
+			return "application/x-sh";
+		else if (type == ".svg")
+			return "image/svg+xml";
+		else if (type == ".swf")
+			return "application/x-shockwave-flash";
+		else if (type == ".tar")
+			return "application/x-tar";
+		else if (type == ".tif")
+			return "image/tiff";
+		else if (type == ".tiff")
+			return "image/tiff";
+		else if (type == ".ttf")
+			return "application/x-font-ttf";
+		else if (type == ".vsd")
+			return "application/vnd.visio";
+		else if (type == ".wav")
+			return "audio/x-wav";
+		else if (type == ".weba")
+			return "audio/webm";
+		else if (type == ".webm")
+			return "video/webm";
+		else if (type == ".webp")
+			return "image/webp";
+		else if (type == ".woff")
+			return "application/x-font-woff";
+		else if (type == ".xhtml")
+			return "application/xhtml+xml";
+		else if (type == ".xls")
+			return "application/vnd.ms-excel";
+		else if (type == ".xml")
+			return "application/xml";
+		else if (type == ".xul")
+			return "application/vnd.mozilla.xul+xml";
+		else if (type == ".zip")
+			return "application/zip";
+		else if (type == ".3gp")
+			return "video/3gpp audio/3gpp";
+		else if (type == ".3g2")
+			return "video/3gpp2 audio/3gpp2";
+		else if (type == ".7z")
+			return "application/x-7z-compressed";
+
+		return "text/plain";
+	}
 } /* namespace webserv */

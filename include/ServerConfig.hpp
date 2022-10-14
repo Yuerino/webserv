@@ -36,6 +36,8 @@ namespace webserv {
 		const std::string& get_index() const;
 		const std::set<std::string>& get_allow_methods() const;
 		const std::map<std::string, LocationConfig>& get_locations() const;
+		const int& get_client_max_body_size() const;
+		const std::map<std::string, std::string>& get_error_pages() const;
 
 	private:
 		std::set<std::string>					_server_names;
@@ -44,9 +46,12 @@ namespace webserv {
 		std::string								_index;
 		std::set<std::string>					_allow_methods;
 		std::map<std::string, LocationConfig>	_locations;
+		int										_client_max_body_size;
+		std::map<std::string, std::string>		_error_pages;
 
 		bool add_allow_methods(const std::string& method);
 		bool add_listen(const std::string& value);
+		bool add_error_page(const std::string& value);
 	};
 
 #ifdef PARSER_DEBUG

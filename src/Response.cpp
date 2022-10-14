@@ -1,81 +1,201 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response() : _server_configs(), _request(0), _status_code(0) {}
+	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) :
+		_server_configs(),
+		_request(request),
+		_status_code(0) {
+		_autoindex = false;
+		_is_custom_error_page = false;
 
-	Response::Response(std::vector<ServerConfig> server_configs) : _server_configs(server_configs), _request(0), _status_code(0) {}
+		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
+		for (; it != server_configs.end(); ++it) {
+			if (it->get_listens().count(request.get_server_listen()) > 0)
+				_server_configs.push_back(*it);
+		}
 
-	Response::~Response() {
-		if (_request != NULL) {
-			delete _request;
+		if (_server_configs.empty()) {
+			_status_code = 404;
 		}
 	}
 
+	Response::~Response() {}
+
 	/**
 	 * @brief Process the request and setup the response accordingly
+	 * @note In case of unexpected exception, set status code to 500
 	 */
-	void Response::process(const Request& request) {
-		_request = new Request(request);
-
-		if (!set_server_config() && !set_location_config() && !set_method()) {
+	void Response::process() {
+		if (_status_code != 0) {
 			return set_error_response();
 		}
 
-		if (!_cgi_path.empty()) {
-			return run_cgi();
-		}
+		try {
+			if (!set_server_config() || !set_location_config() || !set_method()) {
+				return set_error_response();
+			}
 
-		switch (_request->get_method()) {
-			case GET:
-				return process_get();
-			default:
-				_status_code = 400;
-				break;
+			if (!_location_config.get_redirect().empty()) {
+				_status_code = 302;
+				_redirect = rtrim(_location_config.get_redirect(), "/") + _target.substr(rtrim(_location_config.get_location(), "/").length());
+				return set_redirect_response();
+			}
+
+			if (!_cgi_path.empty()) {
+				return process_cgi();
+			}
+
+			switch (_request.get_method()) {
+				case GET:
+					return process_get();
+				case POST:
+					return process_post();
+				case DELETE:
+					return process_delete();
+				default:
+					_status_code = 400;
+					break;
+			}
+		} catch (const std::exception& e) {
+			_status_code = 500;
 		}
 
 		set_error_response();
 	}
 
 	/**
-	 * @brief Set server config accordingly with host header
+	 * @brief Set server config and server name accordingly with host header
 	 * @return true on success otherwise false and set status code to 400
 	 */
 	bool Response::set_server_config() {
+		if (_request.get_content().count("Host") == 0) {
+			_status_code = 400;
+			return false;
+		}
+
+		std::string host_name = _request.get_content().at("Host");
+		host_name = host_name.substr(0, host_name.find_first_of(":"));
+
+		std::vector<ServerConfig>::const_iterator s_it = _server_configs.begin();
+		std::set<std::string>::const_iterator n_it;
+		for (; s_it != _server_configs.end(); ++s_it) {
+			if (s_it->get_server_names().count(host_name) > 0) {
+				_server_name = host_name;
+				_server_config = *s_it;
+				return true;
+			}
+		}
+
+		_server_name = *_server_configs.at(0).get_server_names().begin();
+		_server_config = _server_configs.at(0);
 		return true;
 	}
 
 	/**
-	 * @brief Set location config accordingly with server config and request URI
+	 * @brief Set location config, path, target accordingly with server config and request URI
 	 * @return true on success otherwise false and set status code to 404
 	 */
 	bool Response::set_location_config() {
-		return true;
+		std::string location;
+		std::string path = _request.get_path();
+		if (path.at(path.size() - 1) != '/') {
+			path += "/";
+		}
+		size_t length = path.size();
+
+		for (; length > 0; --length) {
+			location = path.substr(0, length);
+			if (_server_config.get_locations().count(location)) {
+				_location_config = _server_config.get_locations().at(location);
+				_target = path;
+
+				if (_location_config.get_root().empty()) {
+					_root = _server_config.get_root();
+				} else {
+					_root = _location_config.get_root();
+				}
+				return true;
+			}
+		}
+
+		_status_code = 404;
+		return false;
 	}
 
 	/**
-	 * @brief Check and set method or setup cgi
-	 * @return true on success otherwise 405 Method not allow or ??? CGI bin not found
+	 * @brief Check and set method or check and set cgi path
+	 * @return true on success otherwise 405 Method not allow or 404 CGI bin not found
 	 */
 	bool Response::set_method() {
+		if (_location_config.get_allow_methods().count(HTTPMethodStrings[_request.get_method()]) == 0) {
+			_status_code = 405;
+			return false;
+		}
+
+		if (!_location_config.get_cgi_path().empty()) {
+			_cgi_path = _location_config.get_cgi_path();
+		}
+
+		if (access((_root + _location_config.get_location() + _cgi_path).c_str(), X_OK) == -1) {
+			_status_code = 404;
+			return false;
+		}
+
 		return true;
 	}
 
 	/**
 	 * @brief Setup CGI data, run CGI and set CGI response
 	 */
-	void Response::run_cgi() {
-		_status_code = 501;
-		set_error_response();
+	void Response::process_cgi() {
+		setup_cgi_env();
+		// TODO: parse cgi response
+		_body = run_cgi_script(_cgi_env);
+		_status_code = 200;
+		set_response();
 	}
 
 	/**
 	 * @brief Process GET method and setup response
 	 */
 	void Response::process_get() {
+		std::string file_content;
+
+		if (isPathFile(_root + _target)) {
+			try {
+				_body = file_to_string(rtrim(_root + _target, "/"));
+			} catch (const std::exception& e) {
+				_status_code = 403;
+			}
+		} else if (_location_config.get_autoindex() && rtrim(_location_config.get_location(), "/") == rtrim(_target, "/")) {
+			_autoindex = true;
+			set_autoindex_body();
+		} else {
+			std::string index = _root + _target + (_location_config.get_index().empty() ? _server_config.get_index() : _location_config.get_index());
+
+			try {
+				_body = file_to_string(index);
+			} catch (const std::exception& e) {
+				_status_code = 404;
+			}
+		}
+
+		if (_status_code >= 400 && _status_code < 600) {
+			return set_error_response();
+		}
+
 		_status_code = 200;
-		_body = file_to_string("./html/post.html");
-		// _body = "<html><body><h1>Hello World</h1><body></html>";
 		set_response();
+	}
+
+	void Response::process_post() {
+		_status_code = 501;
+		set_error_response();
+	}
+
+	void Response::process_delete() {
+		_status_code = 501;
+		set_error_response();
 	}
 
 	/**
@@ -93,7 +213,7 @@ namespace webserv {
 		_response += CRLF;
 
 		_response += "Server: ";
-		_response += "webserv v6.9";
+		_response += "webserv/6.9";
 		_response += CRLF;
 
 		_response += "Connection: close";
@@ -103,10 +223,17 @@ namespace webserv {
 		_response += to_string(_body.length());
 		_response += CRLF;
 
-		// TODO: MIME types
-		_response += "Content-Type: ";
-		_response += "text/html";
-		_response += CRLF;
+		if (_request.get_method() == GET) {
+			_response += "Content-Type: ";
+			if (_autoindex || (_status_code >= 400 && _status_code < 600 && !_is_custom_error_page)) {
+				_response += "text/html";
+			} else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
+				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
+			} else {
+				_response += "text/plain";
+			}
+			_response += CRLF;
+		}
 
 		_response += CRLF;
 		_response += _body;
@@ -116,6 +243,15 @@ namespace webserv {
 	 * @brief Set the response body and header for error status code
 	 */
 	void Response::set_error_response() {
+		if (_server_config.get_error_pages().count(to_string(_status_code))) {
+			_target = _root + _server_config.get_error_pages().at(to_string(_status_code));
+			try {
+				_body = file_to_string(_target);
+				_is_custom_error_page = true;
+				return set_response();
+			} catch (const std::exception& e) { (void)e; }
+		}
+
 		_body = "<html>\n";
 
 		_body += "<head><title>";
@@ -129,6 +265,63 @@ namespace webserv {
 		_body += "</html>";
 
 		set_response();
+	}
+
+	/**
+	 * @brief Setup autoindex body
+	 */
+	void Response::set_autoindex_body() {
+		std::string path = rtrim(_root + _target, "/");
+
+		struct dirent* file = NULL;
+		DIR *dir = opendir(path.c_str());
+		if (dir == NULL) {
+			_status_code = 500;
+			return;
+		}
+
+		_body = "<html>\n";
+		_body += "<head><title>" + path + "</title></head>\n";
+		_body += "<body>\n";
+		_body += "<h1>index of " + path + "</h1>\n";
+
+		file = readdir(dir);
+		while (file != NULL) {
+			std::string file_name(file->d_name);
+			_body += "<p><a href=\"http://" + _request.get_content().at("Host") + rtrim(_target, "/") + "/" + file_name + "\">" + file_name + "</a></p>";
+			file = readdir(dir);
+		}
+
+		_body += "</body>\n";
+		_body += "</html>";
+		closedir(dir);
+	}
+
+	/**
+	 * @brief Setup redirect response header
+	 */
+	void Response::set_redirect_response() {
+		_response = "HTTP/1.1 ";
+		_response += to_string(_status_code);
+		_response += " " + get_status_message(_status_code);
+		_response += CRLF;
+
+		_response += "Date: ";
+		_response += get_current_time("%a, %d %b %Y %H:%M:%S %Z");
+		_response += CRLF;
+
+		_response += "Server: ";
+		_response += "webserv/6.9";
+		_response += CRLF;
+
+		_response += "Connection: close";
+		_response += CRLF;
+
+		_response += "Location: ";
+		_response += _redirect;
+		_response += CRLF;
+
+		_response += CRLF;
 	}
 
 	/* Getter */
@@ -148,6 +341,14 @@ namespace webserv {
 				return "Created";
 			case 202:
 				return "Accepted";
+			case 300:
+				return "Multiple Choices";
+			case 301:
+				return "Moved Permanently";
+			case 302:
+				return "Found";
+			case 303:
+				return "See Other";
 			case 400:
 				return "Bad Request";
 			case 401:
@@ -176,5 +377,30 @@ namespace webserv {
 				return "Not Implemented";
 		}
 		return "Not Implemented";
+	}
+
+	void Response::setup_cgi_env() {
+		_cgi_env["SERVER_SOFTWARE"] = "webserv/6.9";
+		_cgi_env["SERVER_NAME"] = _server_name;
+		_cgi_env["GATEWAY_INTERFACE"] = "CGI/1.1";
+		_cgi_env["SERVER_PROTOCOL"] = "HTTP/1.1";
+		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
+		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
+
+		_cgi_env["REQUEST_URI"] = rtrim(_target, "/");;
+		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
+		_cgi_env["PATH_INFO"] = _root + _target + _cgi_path;
+		_cgi_env["PATH_TRANSLATED"] = _root + _target + _cgi_path;
+		_cgi_env["QUERY_STRING"] = ""; // TODO
+
+		_cgi_env["AUTH_TYPE"] = "";
+		_cgi_env["REMOTE_USER"] = "";
+		_cgi_env["CONTENT_TYPE"] = "";
+		_cgi_env["CONTENT_LENGTH"] = "";
+
+		char client_address[69];
+		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
+		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
+		// TODO: add remaining cgi env from header
 	}
 } /* namespace webserv */

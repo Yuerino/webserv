@@ -256,11 +256,11 @@ namespace webserv {
 			return;
 		}
 
-		if (_clients.find(client_fd)->second.get_UpFile())
-			_clients.find(client_fd)->second.get_UpFile()->write_to_file("./test/");
+		// if (_clients[client_fd].get_UpFile())
+		// 	_clients[client_fd].get_UpFile()->write_to_file("./test/");
 
-		Response response;
-		response.process(_clients[client_fd]);
+		Response response(_server_configs, _clients[client_fd]);
+		response.process();
 
 		int ret = send(client_fd, response.get_raw_data().c_str(), response.get_raw_data().size(), 0);
 

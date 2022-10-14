@@ -24,6 +24,9 @@ namespace webserv {
 		const std::string& get_index() const;
 		const std::set<std::string>& get_allow_methods() const;
 		const std::string& get_cgi_path() const;
+		const std::string& get_cgi_extension() const;
+		const bool& get_autoindex() const;
+		const std::string& get_redirect() const;
 
 	private:
 		std::string				_location;
@@ -31,8 +34,12 @@ namespace webserv {
 		std::string				_index;
 		std::set<std::string>	_allow_methods;
 		std::string				_cgi_path;
+		std::string				_cgi_extension;
+		bool					_autoindex;
+		std::string				_redirect;
 
 		bool add_allow_methods(const std::string& method);
+		bool set_autoindex(const std::string& value);
 	};
 
 #ifdef PARSER_DEBUG
