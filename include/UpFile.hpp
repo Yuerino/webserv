@@ -11,15 +11,18 @@
 #define UPFILE_HPP
 
 #include <iostream>
+#include <map>
 
 namespace webserv
 {
 	class UpFile
 	{
 		private:
-			std::string	_delimiter;
-			std::string	_fileName;
-			std::string	_fileContent;
+			std::string							_delimiter;
+			std::string							_fileName;
+			std::string							_fileContent;
+			std::string							_buffer;
+			std::map<std::string, std::string>	_files;
 
 		public:
 			UpFile();
@@ -35,8 +38,9 @@ namespace webserv
 			void				set_fileName(std::string fileName);
 			void				set_fileContent(std::string fileContent);
 
-			void				parse_fileStream(std::string const &buffer);
+			void				parse_fileStream(void);
 			void				write_to_file(std::string const &path);
+			void				append_buf(char *buf, size_t n);
 	};
 }
 

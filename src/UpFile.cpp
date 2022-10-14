@@ -55,36 +55,49 @@ namespace webserv
 		_fileContent = fileContent;
 	}
 
-	void				UpFile::parse_fileStream(std::string const &buffer)
+	void				UpFile::parse_fileStream(void)
 	{
-		std::string	del_key("\r\n\r\n");
-		if (_delimiter.empty())
+		set_delimiter(_buffer.substr(0, _buffer.find("\r\n")));
+		while (_buffer.compare("--\r\n"))
 		{
-			int pos = buffer.find("\r\n");
-			set_delimiter(buffer.substr(0, pos));
 			std::string disposition_key("Content-Disposition:");
-			std::string sub_buf(buffer.substr(buffer.find(disposition_key) + disposition_key.size(), buffer.find("\r\n", buffer.find(disposition_key) + disposition_key.size()) - (buffer.find(disposition_key) + disposition_key.size())));
 			std::string file_key("filename=\"");
-			set_fileName(sub_buf.substr(sub_buf.find(file_key) + file_key.size(), sub_buf.size() - (sub_buf.find(file_key) + file_key.size() + 1))); // unsafe - testing purposes
+			std::string file_name;
+			std::string file_content;
+			std::string sub_buf(_buffer.substr(_buffer.find(disposition_key) + disposition_key.size(), _buffer.find("\r\n", _buffer.find(disposition_key) + disposition_key.size()) - (_buffer.find(disposition_key) + disposition_key.size())));
+			size_t begin(_buffer.find("\r\n\r\n") + 4);
+			size_t end(_buffer.find(_delimiter, begin) - 2);
+			file_name = sub_buf.substr(sub_buf.find(file_key) + file_key.size(), sub_buf.size() - (sub_buf.find(file_key) + file_key.size() + 1));
+			file_content = _buffer.substr(begin, end - begin);
+			_files[file_name] = file_content;
+			_buffer.erase(0, end + 2 + _delimiter.size());
 		}
-		if (_delimiter == buffer.substr(0, buffer.find("\r\n")))
-			_fileContent.append(buffer.substr(buffer.find(del_key) + del_key.size(), buffer.rfind(_delimiter) - (buffer.find(del_key) + del_key.size() + 2)));
-		else
-			_fileContent.append(buffer.substr(0, buffer.rfind(_delimiter) - 2));
 	}
 
 	void				UpFile::write_to_file(std::string const &path)
 	{
 		std::ofstream dest_file;
-		try
+		parse_fileStream();
+		std::map<std::string, std::string>::iterator it = _files.begin();
+		while (it != _files.end())
 		{
-			dest_file.open(std::string(path + _fileName).c_str());
+			try
+			{
+				dest_file.open(std::string(path + it->first).c_str(), std::ios::binary);
+			}
+			catch(const std::exception& e)
+			{
+				return ;
+			}
+			dest_file << it->second;
+			dest_file.close();
+			it++;
 		}
-		catch(const std::exception& e)
-		{
-			return ;
-		}
-		dest_file << _fileContent;
-		dest_file.close();
+	}
+
+
+	void				UpFile::append_buf(char *buf, size_t n)
+	{
+		_buffer.append(buf, n);
 	}
 } // namespace webserv
