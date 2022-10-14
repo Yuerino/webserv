@@ -134,11 +134,11 @@ namespace webserv {
 
 		if (!_location_config.get_cgi_path().empty()) {
 			_cgi_path = _location_config.get_cgi_path();
-		}
 
-		if (access((_root + _location_config.get_location() + _cgi_path).c_str(), X_OK) == -1) {
-			_status_code = 404;
-			return false;
+			if (access((_root + _location_config.get_location() + _cgi_path).c_str(), X_OK) == -1) {
+				_status_code = 404;
+				return false;
+			}
 		}
 
 		return true;
@@ -171,10 +171,10 @@ namespace webserv {
 			_autoindex = true;
 			set_autoindex_body();
 		} else {
-			std::string index = _root + _target + (_location_config.get_index().empty() ? _server_config.get_index() : _location_config.get_index());
+			_target = _root + _target + (_location_config.get_index().empty() ? _server_config.get_index() : _location_config.get_index());
 
 			try {
-				_body = file_to_string(index);
+				_body = file_to_string(_target);
 			} catch (const std::exception& e) {
 				_status_code = 404;
 			}
