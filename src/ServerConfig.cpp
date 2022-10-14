@@ -24,7 +24,7 @@ namespace webserv {
 		_index(),
 		_allow_methods(),
 		_locations(),
-		_client_body_buffer_size(-1),
+		_client_max_body_size(-1),
 		_error_pages() {}
 
 	ServerConfig::ServerConfig(const ServerConfig& copy) :
@@ -34,7 +34,7 @@ namespace webserv {
 		_index(copy._index),
 		_allow_methods(copy._allow_methods),
 		_locations(copy._locations),
-		_client_body_buffer_size(copy._client_body_buffer_size),
+		_client_max_body_size(copy._client_max_body_size),
 		_error_pages(copy._error_pages) {}
 
 	ServerConfig& ServerConfig::operator=(const ServerConfig& other) {
@@ -45,7 +45,7 @@ namespace webserv {
 		_index = other._index;
 		_allow_methods = other._allow_methods;
 		_locations = other._locations;
-		_client_body_buffer_size = other._client_body_buffer_size;
+		_client_max_body_size = other._client_max_body_size;
 		_error_pages = other._error_pages;
 		return *this;
 	}
@@ -62,7 +62,7 @@ namespace webserv {
 		types.insert("index");
 		types.insert("allow_methods");
 		types.insert("location");
-		types.insert("client_body_buffer_size");
+		types.insert("client_max_body_size");
 		types.insert("error_page");
 	}
 
@@ -82,8 +82,8 @@ namespace webserv {
 			_index = value;
 		} else if (type == "allow_methods") {
 			return add_allow_methods(value);
-		} else if (type == "client_body_buffer_size" && _client_body_buffer_size == -1 && is_digits(value)) {
-			_client_body_buffer_size = std::atoi(value.c_str());
+		} else if (type == "client_max_body_size" && _client_max_body_size == -1 && is_digits(value)) {
+			_client_max_body_size = std::atoi(value.c_str());
 		} else if (type == "error_page") {
 			return add_error_page(value);
 		} else {
@@ -236,7 +236,7 @@ namespace webserv {
 	const std::string& ServerConfig::get_index() const { return _index; }
 	const std::set<std::string>& ServerConfig::get_allow_methods() const { return _allow_methods; }
 	const std::map<std::string, LocationConfig>& ServerConfig::get_locations() const { return _locations; }
-	const int& ServerConfig::get_client_body_buffer_size() const { return _client_body_buffer_size; }
+	const int& ServerConfig::get_client_max_body_size() const { return _client_max_body_size; }
 	const std::map<std::string, std::string>& ServerConfig::get_error_pages() const { return _error_pages; }
 
 #ifdef PARSER_DEBUG

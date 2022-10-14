@@ -149,6 +149,7 @@ namespace webserv {
 	 */
 	void Response::process_cgi() {
 		setup_cgi_env();
+		// TODO: parse cgi response
 		_body = run_cgi_script(_cgi_env);
 		_status_code = 200;
 		set_response();
@@ -385,16 +386,21 @@ namespace webserv {
 		_cgi_env["SERVER_PROTOCOL"] = "HTTP/1.1";
 		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
+
+		_cgi_env["REQUEST_URI"] = rtrim(_target, "/");;
+		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
 		_cgi_env["PATH_INFO"] = _root + _target + _cgi_path;
 		_cgi_env["PATH_TRANSLATED"] = _root + _target + _cgi_path;
-		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
-		_cgi_env["QUERY_STRING"] = "";
-		char client_address[69];
-		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
-		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
+		_cgi_env["QUERY_STRING"] = ""; // TODO
+
 		_cgi_env["AUTH_TYPE"] = "";
 		_cgi_env["REMOTE_USER"] = "";
 		_cgi_env["CONTENT_TYPE"] = "";
 		_cgi_env["CONTENT_LENGTH"] = "";
+
+		char client_address[69];
+		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
+		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
+		// TODO: add remaining cgi env from header
 	}
 } /* namespace webserv */
