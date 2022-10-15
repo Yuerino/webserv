@@ -229,12 +229,15 @@ namespace webserv {
 
 		if (req.get_bytes_to_read() == 0) {
 			req.set_bytes_to_read();
+			if (req.get_bytes_to_read() > (u_long)get_server_config(req).get_client_max_body_size()) {
+				req.set_flag(413);
+				_iohandler.set_write_ready(client_fd);
+			}
+			else if (req.check_single_chunk(std::string(buffer)))
+				_iohandler.set_write_ready(client_fd);;
 		} else {
 			req.mod_bytes_to_read(bytesRead);
 			req.set_UpFile(buffer, bytesRead);
-
-			LOG_D() << "file delimiter is " << req.get_UpFile()->get_delimiter() << "\n";
-			LOG_D() << "file name is " << req.get_UpFile()->get_fileName() << "\n";
 		}
 
 		LOG_D() << req.get_method() << "\n";
@@ -271,5 +274,31 @@ namespace webserv {
 		}
 
 		remove_client(client_fd);
+	}
+	/**
+	 * @brief Returns the configurations of the server specified in the request
+	 */
+	ServerConfig Server::get_server_config(Request const &req) const
+	{
+		std::vector<ServerConfig> matching;
+		std::vector<ServerConfig>::const_iterator it = _server_configs.begin();
+		for (; it != _server_configs.end(); ++it) {
+			if (it->get_listens().count(req.get_server_listen()) > 0)
+				matching.push_back(*it);
+		}
+
+		if (req.get_content().count("Host")) {
+			std::string host_name = req.get_content().at("Host");
+			host_name = host_name.substr(0, host_name.find_first_of(":"));
+
+			std::vector<ServerConfig>::const_iterator s_it = matching.begin();
+			std::set<std::string>::const_iterator n_it;
+			for (; s_it != matching.end(); ++s_it) {
+				if (s_it->get_server_names().count(host_name) > 0) {
+					return (*s_it);
+				}
+			}
+		}
+		return (_server_configs.at(0));
 	}
 } /* namespace webserv */

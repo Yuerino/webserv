@@ -4,6 +4,7 @@ namespace webserv
 {
 	Request::Request() :
 		_method(-1),
+		_flag(0),
 		_path(),
 		_scheme(),
 		_client(),
@@ -14,6 +15,7 @@ namespace webserv
 
 	Request::Request(struct sockaddr_in client_address, Listen server_listen) :
 		_method(-1),
+		_flag(0),
 		_path(),
 		_scheme(),
 		_client(client_address),
@@ -24,6 +26,7 @@ namespace webserv
 
 	Request::Request(Request const &other) :
 		_method(other._method),
+		_flag(other._flag),
 		_path(other._path),
 		_scheme(other._scheme),
 		_client(other._client),
@@ -39,6 +42,7 @@ namespace webserv
 	Request& Request::operator=(Request const &other)
 	{
 		_method = other._method;
+		_flag = other._flag;
 		_path = other._path;
 		_scheme = other._scheme;
 		_client = other._client;
@@ -120,6 +124,11 @@ namespace webserv
 		return (_file_to_upload);
 	}
 
+	int					Request::get_flag(void) const
+	{
+		return (_flag);
+	}
+
 	std::string	const		Request::parse_path(std::string const &src)
 	{
 		try
@@ -171,6 +180,7 @@ namespace webserv
 
 	void				Request::mod_bytes_to_read(int mod)
 	{
+		std::cout << mod << std::endl;
 		if ((unsigned long)mod > _bytes_to_read)
 			_bytes_to_read = 0;
 		else
@@ -182,5 +192,20 @@ namespace webserv
 		if (!_file_to_upload)
 			_file_to_upload = new UpFile;
 		_file_to_upload->append_buf(buf, n);
+	}
+
+	void				Request::set_flag(int flag)
+	{
+		_flag = flag;
+	}
+
+	bool				Request::check_single_chunk(std::string buffer)
+	{
+		if (_bytes_to_read && buffer.substr(buffer.find("\r\n\r\n") + 4).size() > 0)
+		{
+			_flag = 400;
+			return true;
+		}
+		return false;
 	}
 }

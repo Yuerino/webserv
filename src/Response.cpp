@@ -4,7 +4,7 @@ namespace webserv {
 	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) :
 		_server_configs(),
 		_request(request),
-		_status_code(0) {
+		_status_code(request.get_flag()) {
 		_autoindex = false;
 		_is_custom_error_page = false;
 

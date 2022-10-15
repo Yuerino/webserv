@@ -46,6 +46,8 @@ namespace webserv {
 		void handle_read_event(const int& client_fd);
 		void handle_write_event(const int& client_fd);
 
+		ServerConfig get_server_config(Request const &req) const;
+
 		Server(const Server& copy); /* disabled */
 		Server& operator=(const Server& other); /* disabled */
 	};
