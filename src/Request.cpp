@@ -180,7 +180,6 @@ namespace webserv
 
 	void				Request::mod_bytes_to_read(int mod)
 	{
-		std::cout << mod << std::endl;
 		if ((unsigned long)mod > _bytes_to_read)
 			_bytes_to_read = 0;
 		else
