@@ -81,14 +81,10 @@ namespace webserv
 		std::map<std::string, std::string>::iterator it = _files.begin();
 		while (it != _files.end())
 		{
-			try
-			{
-				dest_file.open(std::string(path + it->first).c_str(), std::ios::binary);
-			}
-			catch(const std::exception& e)
-			{
-				return ;
-			}
+			std::cout << path << std::endl;
+			dest_file.open(std::string("." + path + it->first).c_str(), std::ios::binary);
+			if (!dest_file.good())
+				throw std::exception();
 			dest_file << it->second;
 			dest_file.close();
 			it++;
@@ -99,5 +95,10 @@ namespace webserv
 	void				UpFile::append_buf(char *buf, size_t n)
 	{
 		_buffer.append(buf, n);
+	}
+
+	bool				UpFile::is_file(void) const
+	{
+		return (_buffer.find("\r\nContent-Type: ") != std::string::npos);
 	}
 } // namespace webserv

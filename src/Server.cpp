@@ -234,7 +234,7 @@ namespace webserv {
 				_iohandler.set_write_ready(client_fd);
 			}
 			else if (req.check_single_chunk(std::string(buffer)))
-				_iohandler.set_write_ready(client_fd);;
+				_iohandler.set_write_ready(client_fd);
 		} else {
 			req.mod_bytes_to_read(bytesRead);
 			req.set_UpFile(buffer, bytesRead);

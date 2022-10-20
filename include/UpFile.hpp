@@ -41,6 +41,7 @@ namespace webserv
 			void				parse_fileStream(void);
 			void				write_to_file(std::string const &path);
 			void				append_buf(char *buf, size_t n);
+			bool				is_file(void) const;
 	};
 }
 

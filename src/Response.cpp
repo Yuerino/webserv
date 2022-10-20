@@ -42,6 +42,7 @@ namespace webserv {
 			}
 
 			if (!_cgi_path.empty()) {
+				std::cout << "here" << std::endl;
 				return process_cgi();
 			}
 
@@ -189,8 +190,20 @@ namespace webserv {
 	}
 
 	void Response::process_post() {
-		_status_code = 501;
-		set_error_response();
+		if (!_request.get_UpFile()->is_file())
+			return ;
+		try
+		{
+			_request.get_UpFile()->write_to_file(_request.get_path());
+		}
+		catch(const std::exception& e)
+		{
+			_status_code = 501;
+			set_error_response();
+		}
+		_status_code = 200;
+		_body = "<h1>File Uploaded Successfully!<h1>";
+		set_response();
 	}
 
 	void Response::process_delete() {

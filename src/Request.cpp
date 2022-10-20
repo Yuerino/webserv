@@ -200,9 +200,11 @@ namespace webserv
 
 	bool				Request::check_single_chunk(std::string buffer)
 	{
-		if (_bytes_to_read && buffer.substr(buffer.find("\r\n\r\n") + 4).size() > 0)
+		std::string content = buffer.substr(buffer.find("\r\n\r\n") + 4);
+
+		if (_bytes_to_read && content.size() > 0)
 		{
-			_flag = 400;
+			set_UpFile((char *)content.c_str(), content.size());
 			return true;
 		}
 		return false;
