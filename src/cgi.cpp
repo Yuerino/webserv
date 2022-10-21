@@ -3,6 +3,8 @@
 //
 
 #include <map>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "utils.hpp"
 
 #define ENVP_COUNT_MAX 1024
@@ -21,8 +23,10 @@ the '&' character inside of the actual data gets translated to "%26"
 std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 {
 	const char *script_name;
+	const char *method;
 	char buffer[4096];
-	char *envp[ENVP_COUNT_MAX];
+	char *envp[ENVP_COUNT_MAX] = { NULL };
+	char *argv[2] = { NULL };
 	int bytes_read;
 	int fds[2];
 	pid_t pid;
@@ -35,8 +39,10 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 	script_name = get_value_of_key(envp_map, "PATH_INFO");
 	if (script_name == NULL)
 		throw std::runtime_error("CGI Error - Script name not found!");
+	LOG_D() << "Script to run: " << script_name << '\n';
 
 	create_envp(envp, envp_map);
+	argv[0] = (char *) script_name; // !!!!!
 
 	pid = fork();
 	if (pid < 0)
@@ -46,14 +52,21 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 	}
 	else if (pid == 0) // child
 	{
+		method = envp_map.find("REQUEST_METHOD")->second.c_str();
+		LOG_D() << "REQUEST_METHOD=" << method << '\n';
+		if (std::strcmp(method, "POST") == 0)
+		{
+			// fds[0] = fopen(body); !!!!!
+			// dup2(fds[0], STDIN_FILENO);
+		}
+
 		close(fds[0]);
 		dup2(fds[1], STDOUT_FILENO);
 		close(fds[1]);
 
-		// if post request - redirect body to stdin !!!!!
-
-		execve(script_name, NULL, envp);
+		execve(script_name, argv, envp);
 		LOG_E() << "CGI Error - execve() failed.\n";
+		throw std::runtime_error("CGI Error - execve() failed!");
 	}
 	else if (pid > 0) // parent
 	{
@@ -123,10 +136,10 @@ char *add_to_c_vector(char **vector, std::map<std::string, std::string> &map, co
 			return NULL;
 
 		temp = it->first + "=" + it->second;
-		vector[index] = (char *) malloc(temp.length() + 1); // !!!!!
+		vector[index] = new char[temp.length() + 1];
 		if (vector[index] == NULL)
 			return NULL;
-		memcpy(vector[index], temp.c_str(), temp.length()); // !!!!!
+		std::memcpy(vector[index], temp.c_str(), temp.length());
 		vector[index][temp.length()] = '\0';
 		return vector[index];
 	}
@@ -148,7 +161,7 @@ void	free_c_vector(char **vector)
 {
 	for (int i = 0; vector[i] != NULL; i++)
 	{
-		free(vector[i]);
+		delete[] vector[i];
 		vector[i] = NULL;
 	}
 }
