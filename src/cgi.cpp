@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "utils.hpp"
+#include <sys/wait.h>
 
 #define ENVP_COUNT_MAX 1024
 

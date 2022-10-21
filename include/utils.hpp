@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <cerrno>
 #include <cstring>
+#include <sys/stat.h>
 
 #define RED "\033[31m"
 #define GREEN "\033[32m"
@@ -22,6 +23,8 @@
 
 #include "Logger.hpp"
 
+#define CRLF "\r\n"
+
 #define LOG_I() LOG(webserv::LOG_INFO)
 #define LOG_E() LOG(webserv::LOG_ERROR)
 #define LOG_D() LOG(webserv::LOG_DEBUG)
@@ -31,7 +34,19 @@
 #define LOG_FILE(path) webserv::internal::Logger::set_log_file(path)
 
 namespace webserv {
-	/* Temporary put it here until we work on HTTP stuff */
+	enum requests
+	{
+		GET,
+		HEAD,
+		POST,
+		PUT,
+		DELETE,
+		CONNECT,
+		OPTIONS,
+		TRACE,
+		UNKNOWN
+	};
+
 	static const char* const HTTPMethodStrings[] = {
 		"GET",
 		"HEAD",
@@ -40,7 +55,8 @@ namespace webserv {
 		"DELETE",
 		"CONNECT",
 		"OPTIONS",
-		"TRACE"
+		"TRACE",
+		"UNKNOWN"
 	};
 
 	/**
@@ -66,4 +82,12 @@ namespace webserv {
 	bool is_ip4(const std::string& ip4);
 
 	bool is_match(std::string str, std::string pattern, char delimiter);
+
+	std::string esc_to_string(std::string const &other);
+
+	bool isPathFile(const std::string& path);
+
+	std::string rtrim(const std::string &s, const std::string& delimiter);
+
+	std::string get_mime_type(const std::string& type);
 } /* namespace webserv */
