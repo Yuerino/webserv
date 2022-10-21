@@ -21,7 +21,7 @@ private:
 	void init(std::string ip, int port);
 	void run();
 	static int create_socket();
-	static void bind_socket(const int& socket_fd, const std::string& host, const int& port);
+	sockaddr_in bind_socket(const int& socket_fd, const std::string& host, const int& port);
 	void connect_sock(int socket_fd, sockaddr_in sock_addr);
 };
 
