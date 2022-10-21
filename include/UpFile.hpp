@@ -33,6 +33,7 @@ namespace webserv
 			std::string const	&get_delimiter(void) const;
 			std::string const	&get_fileName(void) const;
 			std::string const	&get_fileContent(void) const;
+			std::map<std::string, std::string> const	&get_files() const;
 
 			void				set_delimiter(std::string delimiter);
 			void				set_fileName(std::string fileName);
@@ -41,6 +42,7 @@ namespace webserv
 			void				parse_fileStream(void);
 			void				write_to_file(std::string const &path);
 			void				append_buf(char *buf, size_t n);
+			bool				is_file(void) const;
 	};
 }
 

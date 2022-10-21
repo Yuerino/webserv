@@ -51,6 +51,7 @@ namespace webserv {
 		void setup_cgi_env();
 		void set_autoindex_body();
 		void set_redirect_response();
+		void get_cookies();
 
 		Response(const Response& copy); /* disabled */
 		Response& operator=(const Response&other); /* disabled */

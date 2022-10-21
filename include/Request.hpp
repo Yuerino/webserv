@@ -58,6 +58,7 @@ namespace webserv
 	{
 		private:
 			int									_method;
+			int									_flag;
 			std::string							_path;
 			std::string							_scheme;
 			struct sockaddr_in					_client;
@@ -75,6 +76,7 @@ namespace webserv
 
 			void										init(std::string const &request);
 			int											get_method(void) const;
+			int											get_flag(void) const;
 			std::string const							&get_path(void) const;
 			std::string const							&get_scheme(void) const;
 			struct sockaddr_in const					&get_client(void) const;
@@ -90,6 +92,8 @@ namespace webserv
 			void						set_bytes_to_read(void);
 			void						mod_bytes_to_read(int mod);
 			void						set_UpFile(char *buf, size_t n);
+			void						set_flag(int flag);
+			bool						check_single_chunk(std::string buffer);
 	};
 }
 

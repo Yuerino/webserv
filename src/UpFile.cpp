@@ -74,30 +74,33 @@ namespace webserv
 		}
 	}
 
-	void				UpFile::write_to_file(std::string const &path)
+	void				UpFile::write_to_file(std::string const &relative_path)
 	{
 		std::ofstream dest_file;
 		parse_fileStream();
 		std::map<std::string, std::string>::iterator it = _files.begin();
 		while (it != _files.end())
 		{
-			try
-			{
-				dest_file.open(std::string(path + it->first).c_str(), std::ios::binary);
-			}
-			catch(const std::exception& e)
-			{
-				return ;
-			}
+			dest_file.open(std::string(relative_path + it->first).c_str(), std::ios::binary);
+			if (!dest_file.good())
+				throw std::exception();
 			dest_file << it->second;
 			dest_file.close();
 			it++;
 		}
 	}
 
+	std::map<std::string, std::string> const	&UpFile::get_files() const {
+		return _files;
+	}
 
 	void				UpFile::append_buf(char *buf, size_t n)
 	{
 		_buffer.append(buf, n);
+	}
+
+	bool				UpFile::is_file(void) const
+	{
+		return (_buffer.find("\r\nContent-Type: ") != std::string::npos);
 	}
 } // namespace webserv

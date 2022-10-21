@@ -2,12 +2,12 @@
 
 namespace webserv {
 	LocationConfig::LocationConfig() :
-		_location(),
-		_root(),
-		_index(),
+		_location(""),
+		_root(""),
+		_index(""),
 		_allow_methods(),
-		_cgi_path(),
-		_cgi_extension(),
+		_cgi_path(""),
+		_cgi_extension(""),
 		_autoindex(false),
 		_redirect() {}
 
