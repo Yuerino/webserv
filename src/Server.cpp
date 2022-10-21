@@ -103,7 +103,7 @@ namespace webserv {
 	 */
 	void Server::run() {
 		for (socket_it = _socket_fds.begin(); socket_it != _socket_fds.end(); ++socket_it) {
-			if (listen(socket_it->first, 100) == -1) {
+			if (listen(socket_it->first, 200) == -1) {
 				throw std::runtime_error("Fail to listen from socket fd: " + std::string(std::strerror(errno)) + "\n");
 			}
 			LOG_D() << "Listening for connection on socket fd: " << socket_it->first << "\n";
@@ -229,7 +229,7 @@ namespace webserv {
 
 		if (req.get_bytes_to_read() == 0) {
 			req.set_bytes_to_read();
-			if (req.get_bytes_to_read() > (u_long)get_server_config(req).get_client_max_body_size()) {
+			if ((get_server_config(req).get_client_max_body_size() > -1) && (req.get_bytes_to_read() > (u_long)get_server_config(req).get_client_max_body_size())) {
 				req.set_flag(413);
 				_iohandler.set_write_ready(client_fd);
 			}

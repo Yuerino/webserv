@@ -42,19 +42,19 @@ namespace webserv {
 			}
 
 			if (!_cgi_path.empty()) {
-				std::cout << "here" << std::endl;
 				return process_cgi();
 			}
 
 			switch (_request.get_method()) {
 				case GET:
+				// case HEAD:
 					return process_get();
 				case POST:
 					return process_post();
 				case DELETE:
 					return process_delete();
 				default:
-					_status_code = 400;
+					_status_code = 501;
 					break;
 			}
 		} catch (const std::exception& e) {
@@ -185,6 +185,10 @@ namespace webserv {
 			return set_error_response();
 		}
 
+		// if (_request.get_method() == HEAD) {
+		// 	_body = "";
+		// }
+
 		_status_code = 200;
 		set_response();
 	}
@@ -194,21 +198,26 @@ namespace webserv {
 			return ;
 		try
 		{
-			_request.get_UpFile()->write_to_file(_request.get_path());
+			_request.get_UpFile()->write_to_file(_root + _target);
 		}
 		catch(const std::exception& e)
 		{
-			_status_code = 501;
+			_status_code = 400;
 			set_error_response();
 		}
-		_status_code = 200;
-		_body = "<h1>File Uploaded Successfully!<h1>";
+		_status_code = 201;
 		set_response();
 	}
 
 	void Response::process_delete() {
-		_status_code = 501;
-		set_error_response();
+		if (!remove((const char *)std::string(_root + rtrim(_target, "/")).c_str())) {
+			_status_code = 204;
+			set_response();
+		}
+		else {
+			_status_code = 400;
+			set_error_response();
+		}
 	}
 
 	/**
@@ -248,8 +257,25 @@ namespace webserv {
 			_response += CRLF;
 		}
 
+		if (_request.get_method() == POST && _request.get_UpFile() != NULL) {
+			_response += "Location: ";
+			std::string filename = _request.get_UpFile()->get_files().begin()->first;
+			_response += _target + filename;
+			_response += CRLF;
+		}
+
+		get_cookies();
+
 		_response += CRLF;
 		_response += _body;
+	}
+
+	void Response::get_cookies() {
+		if (_request.get_content().count("Cookie") == 0 || (_request.get_content().count("Cookie") > 0 && _request.get_content().at("Cookie").find("timestamp=") == std::string::npos)) {
+			_response += "Set-Cookie: ";
+			_response += "timestamp=" + get_current_time("%H:%M:%S") + "; Max-Age=30";
+			_response += CRLF;
+		}
 	}
 
 	/**
@@ -334,6 +360,8 @@ namespace webserv {
 		_response += _redirect;
 		_response += CRLF;
 
+		get_cookies();
+
 		_response += CRLF;
 	}
 
@@ -354,6 +382,8 @@ namespace webserv {
 				return "Created";
 			case 202:
 				return "Accepted";
+			case 204:
+				return "No Content";
 			case 300:
 				return "Multiple Choices";
 			case 301:
@@ -408,12 +438,14 @@ namespace webserv {
 
 		_cgi_env["AUTH_TYPE"] = "";
 		_cgi_env["REMOTE_USER"] = "";
+
 		_cgi_env["CONTENT_TYPE"] = "";
 		_cgi_env["CONTENT_LENGTH"] = "";
 
 		char client_address[69];
 		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
 		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
+
 		// TODO: add remaining cgi env from header
 	}
 } /* namespace webserv */

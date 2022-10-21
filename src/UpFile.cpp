@@ -74,15 +74,14 @@ namespace webserv
 		}
 	}
 
-	void				UpFile::write_to_file(std::string const &path)
+	void				UpFile::write_to_file(std::string const &relative_path)
 	{
 		std::ofstream dest_file;
 		parse_fileStream();
 		std::map<std::string, std::string>::iterator it = _files.begin();
 		while (it != _files.end())
 		{
-			std::cout << path << std::endl;
-			dest_file.open(std::string("." + path + it->first).c_str(), std::ios::binary);
+			dest_file.open(std::string(relative_path + it->first).c_str(), std::ios::binary);
 			if (!dest_file.good())
 				throw std::exception();
 			dest_file << it->second;
@@ -91,6 +90,9 @@ namespace webserv
 		}
 	}
 
+	std::map<std::string, std::string> const	&UpFile::get_files() const {
+		return _files;
+	}
 
 	void				UpFile::append_buf(char *buf, size_t n)
 	{
