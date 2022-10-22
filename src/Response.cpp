@@ -136,7 +136,7 @@ namespace webserv {
 		if (!_location_config.get_cgi_path().empty()) {
 			_cgi_path = _location_config.get_cgi_path();
 
-			if (access((_root + _location_config.get_location() + _cgi_path).c_str(), X_OK) == -1) {
+			if (access((/*_root + _location_config.get_location() + */_cgi_path).c_str(), X_OK) == -1) {
 				_status_code = 404;
 				return false;
 			}
@@ -247,7 +247,7 @@ namespace webserv {
 
 		if (_request.get_method() == GET) {
 			_response += "Content-Type: ";
-			if (_autoindex || (_status_code >= 400 && _status_code < 600 && !_is_custom_error_page)) {
+			if (_autoindex || (_status_code >= 400 && _status_code < 600 && !_is_custom_error_page) || !_cgi_path.empty()) {
 				_response += "text/html";
 			} else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
 				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
@@ -267,7 +267,10 @@ namespace webserv {
 		get_cookies();
 
 		_response += CRLF;
-		_response += _body;
+		if (_body.find("<html>") != std::string::npos)
+			_response += _body.substr(_body.find("<html>"));
+		else
+			_response += _body;
 	}
 
 	void Response::get_cookies() {
@@ -430,17 +433,21 @@ namespace webserv {
 		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
 
-		_cgi_env["REQUEST_URI"] = rtrim(_target, "/");;
-		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
-		_cgi_env["PATH_INFO"] = _root + _target + _cgi_path;
-		_cgi_env["PATH_TRANSLATED"] = _root + _target + _cgi_path;
-		_cgi_env["QUERY_STRING"] = ""; // TODO
+		_cgi_env["REQUEST_URI"] = _root + rtrim(_target, "/");
+		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/").substr(0, _target.find("?"));
+		_cgi_env["PATH_INFO"] = _cgi_path;
+		_cgi_env["PATH_TRANSLATED"] = _root + rtrim(_target, "/").substr(0, _target.find("?"));
+		if (_target.find("?") != std::string::npos)
+			_cgi_env["QUERY_STRING"] = rtrim(_target.substr(_target.find("?") + 1), "/"); // TODO
+		else
+			_cgi_env["QUERY_STRING"] = "";
 
 		_cgi_env["AUTH_TYPE"] = "";
 		_cgi_env["REMOTE_USER"] = "";
 
 		_cgi_env["CONTENT_TYPE"] = "";
 		_cgi_env["CONTENT_LENGTH"] = "";
+		_cgi_env["REDIRECT_STATUS"] = "1";
 
 		char client_address[69];
 		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
