@@ -138,12 +138,16 @@ namespace webserv
 		std::string headers = _raw_header.substr(_raw_header.find("\r\n") + 2);
 		size_t pos = headers.find("\r\n");
 
-		for (; pos != std::string::npos; pos = headers.find("\r\n")) {
+		for (; !headers.empty(); pos = headers.find("\r\n")) {
 			std::string possible_header = headers.substr(0, pos);
-			headers = headers.substr(pos + 2);
+			if (pos == std::string::npos) {
+				headers.clear();
+			} else {
+				headers = headers.substr(pos + 2);
+			}
 
 			size_t header_pos = possible_header.find(": ");
-			if (pos == std::string::npos) {
+			if (header_pos == std::string::npos) {
 				_status_code = 400;
 				return false;
 			}

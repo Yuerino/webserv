@@ -151,17 +151,16 @@ namespace webserv {
 	}
 
 	void Response::process_post() {
-		if (!_request.get_upload_file()->is_file())
-			return;
-		try
-		{
-			_request.get_upload_file()->write_to_file(_root + _target);
+		if (_request.get_upload_file()->is_file()) {
+			try {
+				_request.get_upload_file()->write_to_file(_root + _target);
+			}
+			catch(const std::exception& e) {
+				_status_code = 400;
+				return set_error_response();
+			}
 		}
-		catch(const std::exception& e)
-		{
-			_status_code = 400;
-			set_error_response();
-		}
+
 		_status_code = 201;
 		set_response();
 	}
@@ -199,7 +198,7 @@ namespace webserv {
 		_response += CRLF;
 
 		_response += "Content-Length: ";
-		_response += to_string(_body.length());
+		_response += to_string(_body.size());
 		_response += CRLF;
 
 		if (_request.get_method() == GET) {
@@ -214,7 +213,7 @@ namespace webserv {
 			_response += CRLF;
 		}
 
-		if (_request.get_method() == POST && _request.get_upload_file() != NULL) {
+		if (_request.get_method() == POST && _request.get_upload_file() != NULL && _request.get_upload_file()->is_file()) {
 			_response += "Location: ";
 			std::string filename = _request.get_upload_file()->get_files().begin()->first;
 			_response += _target + filename;
@@ -224,10 +223,7 @@ namespace webserv {
 		get_cookies();
 
 		_response += CRLF;
-		if (_body.find("<html>") != std::string::npos)
-			_response += _body.substr(_body.find("<html>"));
-		else
-			_response += _body;
+		_response += _body;
 	}
 
 	void Response::get_cookies() {
