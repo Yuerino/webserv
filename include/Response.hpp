@@ -13,16 +13,14 @@
 namespace webserv {
 	class Response {
 	public:
-		Response(const Request& request);
+		Response(Request& request);
 		~Response();
 
 		void process();
-
 		const std::string& get_raw_data() const;
-		static std::string get_status_message(const int& status_code);
 
 	private:
-		const Request&						_request;
+		Request&							_request;
 		int									_status_code;
 		std::string							_server_name;
 		ServerConfig						_server_config;

@@ -130,28 +130,6 @@ namespace webserv {
 		return pattern_i == pattern_len;
 	}
 
-	std::string esc_to_string(std::string const &other)
-	{
-		std::string chars[2] = {"\r", "\n"};
-		std::string repres[2] = {"\\r", "\\n"};
-		size_t i(0);
-		std::string	res(other);
-		while (i < 2)
-		{
-			size_t	begin(0);
-			size_t	end(res.find(chars[i]));
-			while (end != std::string::npos)
-			{
-				res.insert(end, repres[i]);
-				res.erase(res.find(chars[i]), 1);
-				begin += end + 2;
-				end = res.find(chars[i]);
-			}
-			i++;
-		}
-		return (res);
-	}
-
 	/**
 	 * @brief Check if path is a file or not
 	 */
@@ -178,6 +156,105 @@ namespace webserv {
 	std::string rtrim(const std::string &s, const std::string& delimiter) {
 		size_t end = s.find_last_not_of(delimiter);
 		return (end == std::string::npos) ? s : s.substr(0, end + 1);
+	}
+
+	/**
+	 * @brief Parse header fields
+	 * @throw std::logic_error if header is invalid
+	 */
+	std::map<std::string, std::string> parse_header_fields(const std::string& raw) {
+		std::string headers = raw;
+		std::map<std::string, std::string> header_list;
+		size_t pos = headers.find("\r\n");
+
+		for (; !headers.empty(); pos = headers.find("\r\n")) {
+			std::string possible_header = headers.substr(0, pos);
+			if (pos == std::string::npos) {
+				headers.clear();
+			} else {
+				headers = headers.substr(pos + 2);
+			}
+
+			size_t header_pos = possible_header.find(": ");
+			if (header_pos == std::string::npos) {
+				throw new std::logic_error("Invalid header field");
+			}
+
+			std::string key = possible_header.substr(0, header_pos);
+			std::string value = possible_header.substr(header_pos + 2);
+
+			if (header_list.count(key) > 0) {
+				throw new std::logic_error("Duplicate header field");
+			}
+			header_list[key] = value;
+		}
+
+		return header_list;
+	}
+
+	/**
+	 * @brief Write to a file
+	 * @exception Throw runtime_error if file can't be opened
+	 */
+	void string_to_file(const std::string& file_path, const std::string& content, std::ios::openmode mode) {
+		std::ofstream outfile(file_path.c_str(), mode | std::ios::out);
+		if (!outfile.is_open()) {
+			throw std::runtime_error("File " + file_path + " can't be opened");
+		}
+
+		outfile << content;
+		outfile.close();
+	}
+
+	/**
+	 * @brief Get the HTTP Message of status code
+	 */
+	std::string get_status_message(const int& status_code) {
+		switch(status_code) {
+			case 200:
+				return "OK";
+			case 201:
+				return "Created";
+			case 202:
+				return "Accepted";
+			case 204:
+				return "No Content";
+			case 300:
+				return "Multiple Choices";
+			case 301:
+				return "Moved Permanently";
+			case 302:
+				return "Found";
+			case 303:
+				return "See Other";
+			case 400:
+				return "Bad Request";
+			case 401:
+				return "Unauthorized";
+			case 403:
+				return "Forbidden";
+			case 404:
+				return "Not Found";
+			case 405:
+				return "Method Not Allowed";
+			case 413:
+				return "Request Too Large";
+			case 418:
+				return "I'm a teapot";
+			case 500:
+				return "Internal Server Error";
+			case 501:
+				return "Not Implemented";
+			case 502:
+				return "Bad Gateway";
+			case 503:
+				return "Service Unavailable";
+			case 505:
+				return "HTTP Version Not Supported";
+			default:
+				return "Not Implemented";
+		}
+		return "Not Implemented";
 	}
 
 	/**

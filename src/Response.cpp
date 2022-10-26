@@ -1,7 +1,7 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response(const Request& request) :
+	Response::Response(Request& request) :
 		_request(request),
 		_status_code(request.get_status_code()),
 		_server_name(request.get_server_name()),
@@ -96,7 +96,7 @@ namespace webserv {
 
 		if (!_location_config.get_cgi_path().empty()) {
 			_cgi_path = _location_config.get_cgi_path();
-
+			// TODO: refactor and check file extension too
 			if (access((/*_root + _location_config.get_location() + */_cgi_path).c_str(), X_OK) == -1) {
 				_status_code = 404;
 				return false;
@@ -150,21 +150,33 @@ namespace webserv {
 		set_response();
 	}
 
-	void Response::process_post() {
-		if (_request.get_upload_file()->is_file()) {
-			try {
-				_request.get_upload_file()->write_to_file(_root + _target);
-			}
-			catch(const std::exception& e) {
-				_status_code = 400;
-				return set_error_response();
-			}
-		}
+	// void Response::process_post() {
+	// 	_request.set_upload_file();
 
+	// 	if (_request.get_upload_file()->is_file()) {
+	// 		try {
+	// 			_request.get_upload_file()->write_to_file(_root + _target);
+	// 		}
+	// 		catch(const std::exception& e) {
+	// 			_status_code = 400;
+	// 			return set_error_response();
+	// 		}
+	// 	}
+
+	// 	_status_code = 201;
+	// 	set_response();
+	// }
+
+	void Response::process_post() {
+		if (_request.has_files() && !_request.write_files(_root + _target)) {
+			_status_code = _request.get_status_code();
+			return set_error_response();
+		}
 		_status_code = 201;
 		set_response();
 	}
 
+	// TODO refactor
 	void Response::process_delete() {
 		if (!remove((const char *)std::string(_root + rtrim(_target, "/")).c_str())) {
 			_status_code = 204;
@@ -201,9 +213,23 @@ namespace webserv {
 		_response += to_string(_body.size());
 		_response += CRLF;
 
+		if (_status_code >= 400 && _status_code < 600) {
+			_response += "Content-Type: ";
+			if (_is_custom_error_page && rtrim(_target, "/").find_last_of('.') != std::string::npos) {
+				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
+			} else {
+				_response += "text/html";
+			}
+			_response += CRLF;
+
+			_response += CRLF;
+			_response += _body;
+			return;
+		}
+
 		if (_request.get_method() == GET) {
 			_response += "Content-Type: ";
-			if (_autoindex || (_status_code >= 400 && _status_code < 600 && !_is_custom_error_page) || !_cgi_path.empty()) {
+			if (_autoindex || !_cgi_path.empty()) {
 				_response += "text/html";
 			} else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
 				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
@@ -213,9 +239,9 @@ namespace webserv {
 			_response += CRLF;
 		}
 
-		if (_request.get_method() == POST && _request.get_upload_file() != NULL && _request.get_upload_file()->is_file()) {
+		if (_request.get_method() == POST && _request.has_files()) {
 			_response += "Location: ";
-			std::string filename = _request.get_upload_file()->get_files().begin()->first;
+			std::string filename = _request.get_file_names().at(0);
 			_response += _target + filename;
 			_response += CRLF;
 		}
@@ -321,63 +347,6 @@ namespace webserv {
 		_response += CRLF;
 	}
 
-	/* Getter */
-	const std::string& Response::get_raw_data() const {
-		return _response;
-	}
-
-	/**
-	 * @brief Get the HTTP Message of status code
-	 * @note Static function
-	 */
-	std::string Response::get_status_message(const int& status_code) {
-		switch(status_code) {
-			case 200:
-				return "OK";
-			case 201:
-				return "Created";
-			case 202:
-				return "Accepted";
-			case 204:
-				return "No Content";
-			case 300:
-				return "Multiple Choices";
-			case 301:
-				return "Moved Permanently";
-			case 302:
-				return "Found";
-			case 303:
-				return "See Other";
-			case 400:
-				return "Bad Request";
-			case 401:
-				return "Unauthorized";
-			case 403:
-				return "Forbidden";
-			case 404:
-				return "Not Found";
-			case 405:
-				return "Method Not Allowed";
-			case 413:
-				return "Request Too Large";
-			case 418:
-				return "I'm a teapot";
-			case 500:
-				return "Internal Server Error";
-			case 501:
-				return "Not Implemented";
-			case 502:
-				return "Bad Gateway";
-			case 503:
-				return "Service Unavailable";
-			case 505:
-				return "HTTP Version Not Supported";
-			default:
-				return "Not Implemented";
-		}
-		return "Not Implemented";
-	}
-
 	void Response::setup_cgi_env() {
 		_cgi_env["SERVER_SOFTWARE"] = "webserv/6.9";
 		_cgi_env["SERVER_NAME"] = _server_name;
@@ -408,4 +377,7 @@ namespace webserv {
 
 		// TODO: add remaining cgi env from header
 	}
+
+	/* Getter */
+	const std::string& Response::get_raw_data() const { return _response; }
 } /* namespace webserv */

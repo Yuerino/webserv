@@ -25,6 +25,7 @@ namespace webserv {
 			std::map<std::string, std::string>	_headers;
 			size_t								_bytes_to_read;
 			UpFile								*_upload_file;
+			std::vector<std::string>			_file_names;
 			Listen								_server_listen;
 			std::string							_server_name;
 			ServerConfig						_server_config;
@@ -41,21 +42,24 @@ namespace webserv {
 			Request& operator=(Request const &other);
 			~Request();
 
-			void										init(std::string const &request, std::vector<ServerConfig> const &server_config);
-			int const									&get_status_code(void) const;
-			struct sockaddr_in const					&get_client(void) const;
-			int	const 									&get_method(void) const;
-			std::string const							&get_path(void) const;
-			std::string const							&get_query(void) const;
-			std::map<std::string, std::string> const	&get_headers(void) const;
-			size_t const								&get_bytes_to_read(void) const;
-			UpFile										*get_upload_file(void) const;
-			Listen const								&get_server_listen(void) const;
-			std::string const							&get_server_name(void) const;
-			ServerConfig const							&get_server_config(void) const;
-			void										set_upload_file(const char *buf, size_t n);
-			void										update_bytes_to_read(size_t size);
+			void										init(const char *raw, std::vector<ServerConfig> const &server_config);
+			bool										append_body(const char *raw, size_t size);
+			void										set_upload_file();
+			bool										has_files() const;
+			bool										write_files(std::string const &path);
+			int const									&get_status_code() const;
+			struct sockaddr_in const					&get_client() const;
+			int	const 									&get_method() const;
+			std::string const							&get_path() const;
+			std::string const							&get_query() const;
+			std::map<std::string, std::string> const	&get_headers() const;
+			size_t const								&get_bytes_to_read() const;
+			UpFile										*get_upload_file() const;
+			std::vector<std::string> const				&get_file_names() const;
+			Listen const								&get_server_listen() const;
+			std::string const							&get_server_name() const;
+			ServerConfig const							&get_server_config() const;
 	};
-}
+} /* namespace webserv */
 
 #endif

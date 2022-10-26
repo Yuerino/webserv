@@ -221,19 +221,19 @@ namespace webserv {
 			return;
 		}
 
-		if (_clients.at(client_fd).get_method() == -1) {
-			_clients.at(client_fd).init(std::string(buffer), _server_configs);
-		}
-
 		Request& req = _clients.at(client_fd);
 
-		if (req.get_status_code() != 0 ||
-			req.get_bytes_to_read() == 0) {
-			_iohandler.set_write_ready(client_fd);
+		if (req.get_method() == -1) {
+			req.init(buffer, _server_configs);
+
+			if (req.get_status_code() != 0 || req.get_bytes_to_read() == 0) {
+				_iohandler.set_write_ready(client_fd);
+			}
 			return;
-		} else if (req.get_bytes_to_read() > 0) {
-			req.set_upload_file(buffer, bytesRead);
-			req.update_bytes_to_read(bytesRead);
+		}
+
+		if (req.append_body(buffer, bytesRead)) {
+			_iohandler.set_write_ready(client_fd);
 		}
 	}
 

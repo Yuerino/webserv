@@ -12,6 +12,7 @@
 #include <cerrno>
 #include <cstring>
 #include <sys/stat.h>
+#include <map>
 
 #define RED "\033[31m"
 #define GREEN "\033[32m"
@@ -83,11 +84,15 @@ namespace webserv {
 
 	bool is_match(std::string str, std::string pattern, char delimiter);
 
-	std::string esc_to_string(std::string const &other);
-
 	bool isPathFile(const std::string& path);
 
 	std::string rtrim(const std::string &s, const std::string& delimiter);
+
+	std::map<std::string, std::string> parse_header_fields(const std::string& headers);
+
+	void string_to_file(const std::string& file_path, const std::string& content, std::ios::openmode mode = std::ios::trunc | std::ios::binary);
+
+	std::string get_status_message(const int& status_code);
 
 	std::string get_mime_type(const std::string& type);
 } /* namespace webserv */
