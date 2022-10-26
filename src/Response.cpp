@@ -1,23 +1,13 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) :
-		_server_configs(),
+	Response::Response(const Request& request) :
 		_request(request),
-		_status_code(request.get_status_code()) {
-		_autoindex = false;
-		_is_custom_error_page = false;
-
-		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
-		for (; it != server_configs.end(); ++it) {
-			if (it->get_listens().count(request.get_server_listen()) > 0)
-				_server_configs.push_back(*it);
-		}
-
-		if (_server_configs.empty()) {
-			_status_code = 404;
-		}
-	}
+		_status_code(request.get_status_code()),
+		_server_name(request.get_server_name()),
+		_server_config(request.get_server_config()),
+		_autoindex(false),
+		_is_custom_error_page(false) {}
 
 	Response::~Response() {}
 
@@ -31,7 +21,7 @@ namespace webserv {
 		}
 
 		try {
-			if (!set_server_config() || !set_location_config() || !set_method()) {
+			if (!set_location_config() || !set_method()) {
 				return set_error_response();
 			}
 
@@ -61,33 +51,6 @@ namespace webserv {
 		}
 
 		set_error_response();
-	}
-
-	/**
-	 * @brief Set server config and server name accordingly with host header
-	 * @return true on success otherwise false and set status code to 400
-	 */
-	bool Response::set_server_config() {
-		if (_request.get_content().count("Host") == 0) {
-			_status_code = 400;
-			return false;
-		}
-
-		std::string host_name = _request.get_content().at("Host");
-		host_name = host_name.substr(0, host_name.find_first_of(":"));
-
-		std::vector<ServerConfig>::const_iterator s_it = _server_configs.begin();
-		for (; s_it != _server_configs.end(); ++s_it) {
-			if (s_it->get_server_names().count(host_name) > 0) {
-				_server_name = host_name;
-				_server_config = *s_it;
-				return true;
-			}
-		}
-
-		_server_name = *_server_configs.at(0).get_server_names().begin();
-		_server_config = _server_configs.at(0);
-		return true;
 	}
 
 	/**
@@ -183,20 +146,16 @@ namespace webserv {
 			return set_error_response();
 		}
 
-		// if (_request.get_method() == HEAD) {
-		// 	_body = "";
-		// }
-
 		_status_code = 200;
 		set_response();
 	}
 
 	void Response::process_post() {
-		if (!_request.get_UpFile()->is_file())
-			return ;
+		if (!_request.get_upload_file()->is_file())
+			return;
 		try
 		{
-			_request.get_UpFile()->write_to_file(_root + _target);
+			_request.get_upload_file()->write_to_file(_root + _target);
 		}
 		catch(const std::exception& e)
 		{
@@ -255,9 +214,9 @@ namespace webserv {
 			_response += CRLF;
 		}
 
-		if (_request.get_method() == POST && _request.get_UpFile() != NULL) {
+		if (_request.get_method() == POST && _request.get_upload_file() != NULL) {
 			_response += "Location: ";
-			std::string filename = _request.get_UpFile()->get_files().begin()->first;
+			std::string filename = _request.get_upload_file()->get_files().begin()->first;
 			_response += _target + filename;
 			_response += CRLF;
 		}
@@ -272,7 +231,7 @@ namespace webserv {
 	}
 
 	void Response::get_cookies() {
-		if (_request.get_content().count("Cookie") == 0 || (_request.get_content().count("Cookie") > 0 && _request.get_content().at("Cookie").find("timestamp=") == std::string::npos)) {
+		if (_request.get_headers().count("Cookie") == 0 || (_request.get_headers().count("Cookie") > 0 && _request.get_headers().at("Cookie").find("timestamp=") == std::string::npos)) {
 			_response += "Set-Cookie: ";
 			_response += "timestamp=" + get_current_time("%H:%M:%S") + "; Max-Age=30";
 			_response += CRLF;
@@ -328,7 +287,7 @@ namespace webserv {
 		file = readdir(dir);
 		while (file != NULL) {
 			std::string file_name(file->d_name);
-			_body += "<p><a href=\"http://" + _request.get_content().at("Host") + rtrim(_target, "/") + "/" + file_name + "\">" + file_name + "</a></p>";
+			_body += "<p><a href=\"http://" + _request.get_headers().at("Host") + rtrim(_target, "/") + "/" + file_name + "\">" + file_name + "</a></p>";
 			file = readdir(dir);
 		}
 

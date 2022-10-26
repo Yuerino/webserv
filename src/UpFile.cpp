@@ -94,7 +94,7 @@ namespace webserv
 		return _files;
 	}
 
-	void				UpFile::append_buf(char *buf, size_t n)
+	void				UpFile::append_buf(const char *buf, size_t n)
 	{
 		_buffer.append(buf, n);
 	}

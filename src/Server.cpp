@@ -195,7 +195,7 @@ namespace webserv {
 		}
 
 		if (_clients.count(client_fd) == 0) {
-			_clients[client_fd] = Request(client_address, _socket_fds.find(socket_fd)->second);
+			_clients.insert(std::make_pair(client_fd, Request(client_address, _socket_fds.find(socket_fd)->second)));
 		} else {
 			LOG_E() << "Client fd: " << client_fd << " somehow already connected server\n";
 		}
@@ -221,33 +221,19 @@ namespace webserv {
 			return;
 		}
 
-		if (_clients[client_fd].get_method() == -1) {
-			_clients[client_fd].init(std::string(buffer), _server_configs);
+		if (_clients.at(client_fd).get_method() == -1) {
+			_clients.at(client_fd).init(std::string(buffer), _server_configs);
 		}
 
-		Request& req = _clients[client_fd];
+		Request& req = _clients.at(client_fd);
 
-		if (req.get_status_code() != 0) {
+		if (req.get_status_code() != 0 ||
+			req.get_bytes_to_read() == 0) {
 			_iohandler.set_write_ready(client_fd);
 			return;
-		}
-
-		if (req.get_bytes_to_read() == 0) {
-			req.set_bytes_to_read();
-			// TODO: check in request
-			if ((get_server_config(req).get_client_max_body_size() > -1) && (req.get_bytes_to_read() > (u_long)get_server_config(req).get_client_max_body_size())) {
-				req.set_flag(413);
-				_iohandler.set_write_ready(client_fd);
-			}
-			else if (req.check_single_chunk(std::string(buffer)))
-				_iohandler.set_write_ready(client_fd);
-		} else {
-			req.mod_bytes_to_read(bytesRead);
-			req.set_UpFile(buffer, bytesRead);
-		}
-
-		if (req.get_bytes_to_read() == 0) {
-			_iohandler.set_write_ready(client_fd);
+		} else if (req.get_bytes_to_read() > 0) {
+			req.set_upload_file(buffer, bytesRead);
+			req.update_bytes_to_read(bytesRead);
 		}
 	}
 
@@ -260,7 +246,7 @@ namespace webserv {
 			return;
 		}
 
-		Response response(_server_configs, _clients[client_fd]);
+		Response response(_clients.at(client_fd));
 		response.process();
 
 		int ret = send(client_fd, response.get_raw_data().c_str(), response.get_raw_data().size(), 0);
