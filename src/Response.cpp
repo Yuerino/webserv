@@ -4,7 +4,7 @@ namespace webserv {
 	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) :
 		_server_configs(),
 		_request(request),
-		_status_code(request.get_flag()) {
+		_status_code(request.get_status_code()) {
 		_autoindex = false;
 		_is_custom_error_page = false;
 
@@ -47,7 +47,6 @@ namespace webserv {
 
 			switch (_request.get_method()) {
 				case GET:
-				// case HEAD:
 					return process_get();
 				case POST:
 					return process_post();
@@ -78,7 +77,6 @@ namespace webserv {
 		host_name = host_name.substr(0, host_name.find_first_of(":"));
 
 		std::vector<ServerConfig>::const_iterator s_it = _server_configs.begin();
-		std::set<std::string>::const_iterator n_it;
 		for (; s_it != _server_configs.end(); ++s_it) {
 			if (s_it->get_server_names().count(host_name) > 0) {
 				_server_name = host_name;
