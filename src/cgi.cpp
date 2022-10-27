@@ -8,6 +8,9 @@
 #include "utils.hpp"
 #include <sys/wait.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #define ENVP_COUNT_MAX 1024
 
 void create_envp(char **envp, std::map<std::string, std::string> &map);
@@ -21,7 +24,8 @@ the '&' character inside of the actual data gets translated to "%26"
 '?' translates to "%3F"
 	- also translated: ' '(space), '=', '%'?
 */
-std::string run_cgi_script(std::map<std::string, std::string> envp_map)
+std::string run_cgi_script(std::map<std::string, std::string> envp_map,
+	std::string request_body)
 {
 	const char *script_name;
 	const char *method;
@@ -43,9 +47,7 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 	LOG_D() << "Script to run: " << script_name << "\n";
 
 	create_envp(envp, envp_map);
-	if (std::string(script_name) == "/usr/bin/python3")
-		argv[1] = (char *)get_value_of_key(envp_map, "REQUEST_URI");
-	argv[0] = (char *) script_name; // !!!!!
+	argv[0] = (char *)script_name;
 
 	pid = fork();
 	if (pid < 0)
@@ -56,18 +58,23 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 	else if (pid == 0) // child
 	{
 		method = envp_map.find("REQUEST_METHOD")->second.c_str();
-		LOG_D() << "REQUEST_METHOD=" << method << "\n";
-		if (std::strcmp(method, "POST") == 0)
+		LOG_D() << "REQUEST_METHOD=" << method << '\n';
+		if (std::strcmp(method, "POST") == 0 && request_body.length() > 0)
 		{
-			// fds[0] = fopen(body); !!!!!
-			// dup2(fds[0], STDIN_FILENO);
+			FILE *file = std::fopen("tempfile_", "w");
+			if (file == NULL)
+				throw std::runtime_error("CGI Error - fopen() failed!");
+			std::fwrite((char *) request_body.c_str(), sizeof(char), request_body.length() + 1, file);
+			std::fclose(file);
+			int fd = open("tempfile_", O_RDONLY); // !!!!! delete file
+			fds[0] = fd;
+			dup2(fds[0], STDIN_FILENO);
 		}
 
 		close(fds[0]);
 		dup2(fds[1], STDOUT_FILENO);
 		close(fds[1]);
 
-		LOG_D() << "Running script: " << script_name << " " << argv[1] << "\n";
 		execve(script_name, argv, envp);
 		LOG_E() << "CGI Error - execve() failed.\n";
 		throw std::runtime_error("CGI Error - execve() failed!");
@@ -79,9 +86,9 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 
 		do
 		{
-			bytes_read = read(fds[0], buffer, 4098);
+			bytes_read = read(fds[0], buffer, 4095);
 			buffer[bytes_read] = '\0';
-			cgi_response.append(buffer, bytes_read);
+			cgi_response += buffer;
 		}
 		while (bytes_read != 0);
 
@@ -100,6 +107,7 @@ void create_envp(char **envp, std::map<std::string, std::string> &map)
 	add_to_c_vector(envp, map, "SERVER_PROTOCOL");
 	add_to_c_vector(envp, map, "SERVER_PORT");
 	add_to_c_vector(envp, map, "REQUEST_METHOD");
+	add_to_c_vector(envp, map, "REQUEST_URI");
 	add_to_c_vector(envp, map, "PATH_INFO");
 	add_to_c_vector(envp, map, "PATH_TRANSLATED");
 	add_to_c_vector(envp, map, "SCRIPT_NAME");
@@ -112,9 +120,13 @@ void create_envp(char **envp, std::map<std::string, std::string> &map)
 	add_to_c_vector(envp, map, "CONTENT_TYPE");
 	add_to_c_vector(envp, map, "CONTENT_LENGTH");
 
-	add_to_c_vector(envp, map, "HTTP_ACCEPT");
+	add_to_c_vector(envp, map, "HTTP_HOST");
 	add_to_c_vector(envp, map, "HTTP_USER_AGENT");
-	add_to_c_vector(envp, map, "REDIRECT_STATUS");
+	add_to_c_vector(envp, map, "HTTP_ACCEPT");
+	add_to_c_vector(envp, map, "HTTP_ACCEPT_LANGUAGE");
+	add_to_c_vector(envp, map, "HTTP_ENCODING");
+	add_to_c_vector(envp, map, "HTTP_CONNECTION");
+	add_to_c_vector(envp, map, "HTTP_UPGRADE_INSECURE_REQUESTS");
 }
 
 const char * get_value_of_key(std::map<std::string, std::string> &map, const char *key)
