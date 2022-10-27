@@ -151,8 +151,16 @@ namespace webserv {
 	void Response::process_cgi() {
 		setup_cgi_env();
 		// TODO: parse cgi response
-		_body = run_cgi_script(_cgi_env);
-		_status_code = 200;
+		try {
+			if (_request.get_UpFile() == NULL)
+				_body = run_cgi_script(_cgi_env, "");
+			else
+				_body = run_cgi_script(_cgi_env, _request.get_UpFile()->get_buffer());
+			if (status_code == 0) // not set yet -> default to 200
+				_status_code = 200;
+		} catch (const std::exception& e) {
+			_status_code = 500; // !!!!!
+		}
 		set_response();
 	}
 
@@ -423,6 +431,8 @@ namespace webserv {
 	}
 
 	void Response::setup_cgi_env() {
+		std::map<std::string, std::string> const content = _request.get_content();
+
 		_cgi_env["SERVER_SOFTWARE"] = "webserv/6.9";
 		_cgi_env["SERVER_NAME"] = _server_name;
 		_cgi_env["GATEWAY_INTERFACE"] = "CGI/1.1";
@@ -430,22 +440,39 @@ namespace webserv {
 		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
 
-		_cgi_env["REQUEST_URI"] = rtrim(_target, "/");;
+		_cgi_env["REQUEST_URI"] = rtrim(_target, "/");
 		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
-		_cgi_env["PATH_INFO"] = _root + _target + _cgi_path;
+		_cgi_env["PATH_INFO"] = _root + rtrim(_target, "/");
 		_cgi_env["PATH_TRANSLATED"] = _root + _target + _cgi_path;
-		_cgi_env["QUERY_STRING"] = ""; // TODO
 
-		_cgi_env["AUTH_TYPE"] = "";
-		_cgi_env["REMOTE_USER"] = "";
+		if (_target.find("?") != std::string::npos)
+			_cgi_env["QUERY_STRING"] = rtrim(_target.substr(_target.find("?") + 1), "/");
+		else
+			_cgi_env["QUERY_STRING"] = "";
 
-		_cgi_env["CONTENT_TYPE"] = "";
-		_cgi_env["CONTENT_LENGTH"] = "";
+		_cgi_env["CONTENT_TYPE"] = content.at("Content-Type");
+		_cgi_env["CONTENT_LENGTH"] = content.at("Content-Length");
+		//_cgi_env["CONTENT_LENGTH"] = std::to_string(_request.get_UpFile()->get_buffer().size());
 
 		char client_address[69];
 		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
 		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
 
-		// TODO: add remaining cgi env from header
+		// #optional variables
+		// REMOTE_HOST
+		// REMOTE_IDENT
+		// REMOTE_USER
+		// AUTH_TYPE
+
+		// #HTTP HEADERS
+		_cgi_env["HTTP_HOST"] = content.at("Host");
+		_cgi_env["HTTP_USER_AGENT"] = content.at("User-Agent");
+		_cgi_env["HTTP_ACCEPT"] = content.at("Accept");
+		_cgi_env["HTTP_ACCEPT_LANGUAGE"] = content.at("Accept-Language");
+		_cgi_env["HTTP_ENCODING"] = content.at("Accept-Encoding");
+		_cgi_env["HTTP_CONNECTION"] = content.at("Connection");
+		_cgi_env["HTTP_UPGRADE_INSECURE_REQUESTS"] = content.at("Upgrade-Insecure-Requests");
+		// _cgi_env["HTTP_PRAGMA"] = "";
+		// _cgi_env["HTTP_CACHE_CONTROL"] = "";
 	}
 } /* namespace webserv */

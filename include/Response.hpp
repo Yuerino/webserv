@@ -59,4 +59,5 @@ namespace webserv {
 
 } /* namespace webserv */
 
-std::string run_cgi_script(std::map<std::string, std::string> envp_map);
+std::string run_cgi_script(std::map<std::string, std::string> envp_map,
+	std::string request_body);
