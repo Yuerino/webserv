@@ -326,6 +326,7 @@ namespace webserv {
 	std::string const							&Request::get_path() const { return (_path); }
 	std::string const							&Request::get_query() const { return (_query); }
 	std::map<std::string, std::string> const	&Request::get_headers() const { return (_headers); }
+	std::string const							&Request::get_body() const { return (_raw_body); }
 	size_t const								&Request::get_bytes_to_read() const { return (_bytes_to_read); }
 	std::vector<std::string> const				&Request::get_file_names() const { return (_file_names); }
 	Listen const								&Request::get_server_listen() const { return (_server_listen); }

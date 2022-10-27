@@ -66,3 +66,4 @@ obj/
 webserv.log
 webserv
 unit_test
+html/cgi_bonus/hit-count.txt

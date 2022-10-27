@@ -381,63 +381,6 @@ namespace webserv {
 		_response += CRLF;
 	}
 
-	/* Getter */
-	const std::string& Response::get_raw_data() const {
-		return _response;
-	}
-
-	/**
-	 * @brief Get the HTTP Message of status code
-	 * @note Static function
-	 */
-	std::string Response::get_status_message(const int& status_code) {
-		switch(status_code) {
-			case 200:
-				return "OK";
-			case 201:
-				return "Created";
-			case 202:
-				return "Accepted";
-			case 204:
-				return "No Content";
-			case 300:
-				return "Multiple Choices";
-			case 301:
-				return "Moved Permanently";
-			case 302:
-				return "Found";
-			case 303:
-				return "See Other";
-			case 400:
-				return "Bad Request";
-			case 401:
-				return "Unauthorized";
-			case 403:
-				return "Forbidden";
-			case 404:
-				return "Not Found";
-			case 405:
-				return "Method Not Allowed";
-			case 413:
-				return "Request Too Large";
-			case 418:
-				return "I'm a teapot";
-			case 500:
-				return "Internal Server Error";
-			case 501:
-				return "Not Implemented";
-			case 502:
-				return "Bad Gateway";
-			case 503:
-				return "Service Unavailable";
-			case 505:
-				return "HTTP Version Not Supported";
-			default:
-				return "Not Implemented";
-		}
-		return "Not Implemented";
-	}
-
 	void Response::setup_cgi_env() {
 		_cgi_env["SERVER_SOFTWARE"] = "webserv/6.9";
 		_cgi_env["SERVER_NAME"] = _server_name;
@@ -446,10 +389,10 @@ namespace webserv {
 		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
 
-		_cgi_env["REQUEST_URI"] = rtrim(_target, "/");
-		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
-		_cgi_env["PATH_INFO"] = _root + rtrim(_target, "/");
-		_cgi_env["PATH_TRANSLATED"] = _root + rtrim(_target, "/");
+		_cgi_env["REQUEST_URI"] = _root + rtrim(_target, "/");
+		_cgi_env["SCRIPT_NAME"] = _root + rtrim(_target, "/");
+		_cgi_env["PATH_INFO"] = _cgi_path;
+		_cgi_env["PATH_TRANSLATED"] = _cgi_path;
 		_cgi_env["QUERY_STRING"] = _request.get_query();
 
 		if (_request.get_headers().count("Content-Type") > 0)

@@ -51,6 +51,7 @@ namespace webserv {
 			std::string const							&get_path() const;
 			std::string const							&get_query() const;
 			std::map<std::string, std::string> const	&get_headers() const;
+			std::string const							&get_body() const;
 			size_t const								&get_bytes_to_read() const;
 			std::vector<std::string> const				&get_file_names() const;
 			Listen const								&get_server_listen() const;

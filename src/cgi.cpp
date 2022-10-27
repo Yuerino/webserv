@@ -27,6 +27,7 @@ the '&' character inside of the actual data gets translated to "%26"
 std::string run_cgi_script(std::map<std::string, std::string> envp_map,
 	std::string request_body)
 {
+	const char *bin_file;
 	const char *script_name;
 	const char *method;
 	char buffer[4096];
@@ -41,13 +42,19 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map,
 	if (pipe(fds) == -1)
 		throw std::runtime_error("CGI Error - pipe() failed!");
 
-	script_name = get_value_of_key(envp_map, "PATH_INFO");
+	bin_file = get_value_of_key(envp_map, "PATH_INFO");
+	if (bin_file == NULL)
+		throw std::runtime_error("CGI Error - Bin file not found!");
+	LOG_D() << "Bin to run: " << bin_file << "\n";
+
+	script_name = get_value_of_key(envp_map, "SCRIPT_NAME");
 	if (script_name == NULL)
 		throw std::runtime_error("CGI Error - Script name not found!");
 	LOG_D() << "Script to run: " << script_name << "\n";
 
 	create_envp(envp, envp_map);
-	argv[0] = (char *)script_name;
+	argv[0] = (char *)bin_file;
+	argv[1] = (char *)script_name;
 
 	pid = fork();
 	if (pid < 0)
@@ -75,7 +82,7 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map,
 		dup2(fds[1], STDOUT_FILENO);
 		close(fds[1]);
 
-		execve(script_name, argv, envp);
+		execve(bin_file, argv, envp);
 		LOG_E() << "CGI Error - execve() failed.\n";
 		throw std::runtime_error("CGI Error - execve() failed!");
 	}
