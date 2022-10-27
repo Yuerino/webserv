@@ -218,7 +218,6 @@ namespace webserv {
 
 		_raw_body.append(raw, size);
 		_bytes_to_read -= size;
-		LOG_D() << "Bytes to read: " << _bytes_to_read << "\n";
 		return _bytes_to_read == 0;
 	}
 

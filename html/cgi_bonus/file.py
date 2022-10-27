@@ -23,8 +23,7 @@ else:
 with open(hit_count_path, 'w') as fp:
     fp.write(str(hit_count))
 
-header = "Content-type: text/html\n\n"
-
+header = "Content-Type: text/html\r\n\r\n"
 
 date_string = time.strftime('%A, %B %d, %Y at %I:%M:%S %p %Z')
 

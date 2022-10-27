@@ -42,9 +42,9 @@ namespace webserv {
 
 			void										init(const char *raw, size_t size, std::vector<ServerConfig> const &server_config);
 			bool										append_body(const char *raw, size_t size);
-			void										set_upload_file();
 			bool										has_files() const;
 			bool										write_files(std::string const &path);
+
 			int const									&get_status_code() const;
 			struct sockaddr_in const					&get_client() const;
 			int	const 									&get_method() const;

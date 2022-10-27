@@ -117,6 +117,7 @@ namespace webserv {
 	void Response::process_cgi() {
 		setup_cgi_env();
 		std::string cgi_data = run_cgi_script(_cgi_env);
+
 		size_t pos = cgi_data.find("\r\n\r\n");
 		if (pos == std::string::npos) {
 			_status_code = 500;
@@ -226,9 +227,14 @@ namespace webserv {
 				}
 				_response += it->first + ": " + it->second + CRLF;
 			}
+			if (_cgi_headers.count("Content-Length") == 0) {
+				_response += "Content-Length: ";
+				_response += to_string(_body.size());
+				_response += CRLF;
+			}
+
 			_response += CRLF;
 			_response += _body;
-			LOG_D() << _response << "\n";
 			return;
 		}
 
@@ -395,7 +401,7 @@ namespace webserv {
 		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
 		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
 
-		// Request header
+		// Request header HTTP
 		std::map<std::string, std::string>::const_iterator header_it = _request.get_headers().begin();
 		for (; header_it != _request.get_headers().end(); ++header_it) {
 			std::string header_name = header_it->first;
