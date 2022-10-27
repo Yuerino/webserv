@@ -204,8 +204,8 @@ namespace webserv {
 	 * @brief Handle read from client
 	 */
 	void Server::handle_read_event(const int& client_fd) {
-		char buffer[READ_BUFFER];
-		ssize_t bytesRead = recv(client_fd, buffer, 2048, 0);
+		char buffer[READ_BUFFER + 1];
+		ssize_t bytesRead = recv(client_fd, buffer, READ_BUFFER, 0);
 
 		if (bytesRead == -1 || bytesRead == 0) {
 			LOG_E() << "Failed to read data from client fd: " << client_fd << "\n";
