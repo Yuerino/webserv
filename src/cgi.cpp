@@ -41,7 +41,7 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 	if (script_name == NULL)
 		throw std::runtime_error("CGI Error - Script name not found!");
 	LOG_D() << "Script to run: " << script_name << "\n";
-	
+
 	create_envp(envp, envp_map);
 	if (std::string(script_name) == "/usr/bin/python3")
 		argv[1] = (char *)get_value_of_key(envp_map, "REQUEST_URI");
@@ -79,9 +79,9 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map)
 
 		do
 		{
-			bytes_read = read(fds[0], buffer, 4095);
+			bytes_read = read(fds[0], buffer, 4098);
 			buffer[bytes_read] = '\0';
-			cgi_response += buffer;
+			cgi_response.append(buffer, bytes_read);
 		}
 		while (bytes_read != 0);
 

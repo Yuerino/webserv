@@ -21,6 +21,7 @@ namespace webserv {
 	namespace internal {
 		extern bool g_shutdown;
 	} /* namespace internal */
+
 	class Server {
 	public:
 		Server(const std::vector<ServerConfig>& server_configs);

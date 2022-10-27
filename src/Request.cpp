@@ -12,7 +12,6 @@ namespace webserv {
 		_query(),
 		_headers(),
 		_bytes_to_read(0),
-		_upload_file(NULL),
 		_file_names(),
 		_server_listen(server_listen),
 		_server_name(),
@@ -29,14 +28,10 @@ namespace webserv {
 		_query(other._query),
 		_headers(other._headers),
 		_bytes_to_read(other._bytes_to_read),
-		_upload_file(NULL),
 		_file_names(other._file_names),
 		_server_listen(other._server_listen),
 		_server_name(other._server_name),
-		_server_config(other._server_config) {
-		if (other._upload_file)
-			_upload_file = new UpFile(*other._upload_file);
-	}
+		_server_config(other._server_config) {}
 
 	Request& Request::operator=(Request const &other) {
 		_status_code = other._status_code;
@@ -49,8 +44,6 @@ namespace webserv {
 		_query = other._query;
 		_headers = other._headers;
 		_bytes_to_read = other._bytes_to_read;
-		if (other._upload_file)
-			_upload_file = new UpFile(*other._upload_file);
 		_file_names = other._file_names;
 		_server_listen = other._server_listen;
 		_server_name = other._server_name;
@@ -58,12 +51,9 @@ namespace webserv {
 		return *this;
 	}
 
-	Request::~Request() {
-		if (_upload_file)
-			delete (_upload_file);
-	}
+	Request::~Request() {}
 
-	void Request::init(const char *raw, std::vector<ServerConfig> const &server_configs) {
+	void Request::init(const char *raw, size_t size, std::vector<ServerConfig> const &server_configs) {
 		_raw = raw;
 
 		try {
@@ -74,7 +64,7 @@ namespace webserv {
 				return;
 			}
 			_raw_header = _raw.substr(0, pos);
-			_raw_body = _raw.substr(pos + 4);
+			_raw_body.append(raw + pos + 4, size - (_raw_header.size() + 4));
 
 			// Get first line of header
 			pos = _raw_header.find("\r\n");
@@ -228,14 +218,8 @@ namespace webserv {
 
 		_raw_body.append(raw, size);
 		_bytes_to_read -= size;
+		LOG_D() << "Bytes to read: " << _bytes_to_read << "\n";
 		return _bytes_to_read == 0;
-	}
-
-	// TODO: remove upfile
-	void Request::set_upload_file() {
-		if (!_upload_file)
-			_upload_file = new UpFile;
-		_upload_file->append_buf(_raw_body.c_str(), _raw_body.size());
 	}
 
 	/**
@@ -344,7 +328,6 @@ namespace webserv {
 	std::string const							&Request::get_query() const { return (_query); }
 	std::map<std::string, std::string> const	&Request::get_headers() const { return (_headers); }
 	size_t const								&Request::get_bytes_to_read() const { return (_bytes_to_read); }
-	UpFile										*Request::get_upload_file() const { return (_upload_file); }
 	std::vector<std::string> const				&Request::get_file_names() const { return (_file_names); }
 	Listen const								&Request::get_server_listen() const { return (_server_listen); }
 	std::string const							&Request::get_server_name() const { return (_server_name); }

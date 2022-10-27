@@ -7,7 +7,8 @@ namespace webserv {
 		_server_name(request.get_server_name()),
 		_server_config(request.get_server_config()),
 		_autoindex(false),
-		_is_custom_error_page(false) {}
+		_is_custom_error_page(false),
+		_cgi_error(false) {}
 
 	Response::~Response() {}
 
@@ -96,9 +97,13 @@ namespace webserv {
 
 		if (!_location_config.get_cgi_path().empty()) {
 			_cgi_path = _location_config.get_cgi_path();
-			// TODO: refactor and check file extension too
-			if (access((/*_root + _location_config.get_location() + */_cgi_path).c_str(), X_OK) == -1) {
+			if (access(_cgi_path.c_str(), X_OK) == -1) {
 				_status_code = 404;
+				return false;
+			}
+
+			if (!is_extension(rtrim(_target, "/"), _location_config.get_cgi_extension())) {
+				_status_code = 403;
 				return false;
 			}
 		}
@@ -111,9 +116,33 @@ namespace webserv {
 	 */
 	void Response::process_cgi() {
 		setup_cgi_env();
-		// TODO: parse cgi response
-		_body = run_cgi_script(_cgi_env);
-		_status_code = 200;
+		std::string cgi_data = run_cgi_script(_cgi_env);
+		size_t pos = cgi_data.find("\r\n\r\n");
+		if (pos == std::string::npos) {
+			_status_code = 500;
+			_cgi_error = true;
+			return set_error_response();
+		}
+
+		try {
+			_cgi_headers = parse_header_fields(cgi_data.substr(0, pos));
+		} catch (const std::logic_error& e) {
+			_status_code = 500;
+			_cgi_error = true;
+			return set_error_response();
+		}
+
+		if (_cgi_headers.count("Location")) {
+			_status_code = 302;
+		}
+		if (_cgi_headers.count("Status")) {
+			_status_code = std::atoi(_cgi_headers.at("Status").c_str());
+		}
+		if (_status_code == 0) {
+			_status_code = 200;
+		}
+
+		_body = cgi_data.substr(pos + 4);
 		set_response();
 	}
 
@@ -150,23 +179,6 @@ namespace webserv {
 		set_response();
 	}
 
-	// void Response::process_post() {
-	// 	_request.set_upload_file();
-
-	// 	if (_request.get_upload_file()->is_file()) {
-	// 		try {
-	// 			_request.get_upload_file()->write_to_file(_root + _target);
-	// 		}
-	// 		catch(const std::exception& e) {
-	// 			_status_code = 400;
-	// 			return set_error_response();
-	// 		}
-	// 	}
-
-	// 	_status_code = 201;
-	// 	set_response();
-	// }
-
 	void Response::process_post() {
 		if (_request.has_files() && !_request.write_files(_root + _target)) {
 			_status_code = _request.get_status_code();
@@ -176,16 +188,13 @@ namespace webserv {
 		set_response();
 	}
 
-	// TODO refactor
 	void Response::process_delete() {
-		if (!remove((const char *)std::string(_root + rtrim(_target, "/")).c_str())) {
-			_status_code = 204;
-			set_response();
+		if (remove(std::string(_root + rtrim(_target, "/")).c_str()) == -1) {
+			_status_code = 403;
+			return set_error_response();
 		}
-		else {
-			_status_code = 400;
-			set_error_response();
-		}
+		_status_code = 204;
+		set_response();
 	}
 
 	/**
@@ -208,6 +217,20 @@ namespace webserv {
 
 		_response += "Connection: close";
 		_response += CRLF;
+
+		if (!_cgi_path.empty() && !_cgi_error) {
+			std::map<std::string, std::string>::iterator it = _cgi_headers.begin();
+			for (; it != _cgi_headers.end(); ++it) {
+				if (it->first == "Status") {
+					continue;
+				}
+				_response += it->first + ": " + it->second + CRLF;
+			}
+			_response += CRLF;
+			_response += _body;
+			LOG_D() << _response << "\n";
+			return;
+		}
 
 		_response += "Content-Length: ";
 		_response += to_string(_body.size());
@@ -356,13 +379,10 @@ namespace webserv {
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
 
 		_cgi_env["REQUEST_URI"] = _root + rtrim(_target, "/");
-		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/").substr(0, _target.find("?"));
+		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
 		_cgi_env["PATH_INFO"] = _cgi_path;
-		_cgi_env["PATH_TRANSLATED"] = _root + rtrim(_target, "/").substr(0, _target.find("?"));
-		if (_target.find("?") != std::string::npos)
-			_cgi_env["QUERY_STRING"] = rtrim(_target.substr(_target.find("?") + 1), "/"); // TODO
-		else
-			_cgi_env["QUERY_STRING"] = "";
+		_cgi_env["PATH_TRANSLATED"] = _root + rtrim(_target, "/");
+		_cgi_env["QUERY_STRING"] = _request.get_query();
 
 		_cgi_env["AUTH_TYPE"] = "";
 		_cgi_env["REMOTE_USER"] = "";
@@ -375,7 +395,15 @@ namespace webserv {
 		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
 		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
 
-		// TODO: add remaining cgi env from header
+		// Request header
+		std::map<std::string, std::string>::const_iterator header_it = _request.get_headers().begin();
+		for (; header_it != _request.get_headers().end(); ++header_it) {
+			std::string header_name = header_it->first;
+			for (size_t i = 0; i < header_name.length(); ++i) {
+				header_name[i] = toupper(header_name[i]);
+			}
+			_cgi_env["HTTP_" + header_name] = header_it->second;
+		}
 	}
 
 	/* Getter */

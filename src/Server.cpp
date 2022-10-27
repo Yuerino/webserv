@@ -1,5 +1,4 @@
 #include "Server.hpp"
-#include "Request.hpp"
 
 namespace webserv {
 	bool internal::g_shutdown = false;
@@ -214,7 +213,7 @@ namespace webserv {
 		}
 
 		buffer[bytesRead] = '\0';
-		LOG_I() << "Received a message from client fd: " << client_fd << ", message: " << buffer << "\n";
+		LOG_I() << "Received a message from client fd: " << client_fd << ", size: " << bytesRead << ", message: " << buffer << "\n";
 
 		if (_clients.count(client_fd) == 0) {
 			LOG_E() << "Client fd: " << client_fd << " somehow not added into client list\n";
@@ -224,7 +223,7 @@ namespace webserv {
 		Request& req = _clients.at(client_fd);
 
 		if (req.get_method() == -1) {
-			req.init(buffer, _server_configs);
+			req.init(buffer, bytesRead, _server_configs);
 
 			if (req.get_status_code() != 0 || req.get_bytes_to_read() == 0) {
 				_iohandler.set_write_ready(client_fd);

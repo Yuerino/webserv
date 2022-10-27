@@ -26,7 +26,7 @@ namespace webserv {
 		ServerConfig						_server_config;
 		bool								_autoindex;
 		bool								_is_custom_error_page;
-		std::map<std::string, std::string>	_fields;
+		bool								_cgi_error;
 		std::string							_response;
 		std::string							_body;
 		std::string							_target;
@@ -35,6 +35,7 @@ namespace webserv {
 		LocationConfig						_location_config;
 		std::map<std::string, std::string>	_cgi_env;
 		std::string							_redirect;
+		std::map<std::string, std::string>	_cgi_headers;
 
 		bool set_server_config();
 		bool set_location_config();

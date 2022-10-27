@@ -7,7 +7,6 @@
 #include <netinet/in.h>
 #include <cstdlib>
 
-#include "UpFile.hpp"
 #include "utils.hpp"
 #include "ServerConfig.hpp"
 
@@ -24,7 +23,6 @@ namespace webserv {
 			std::string							_query;
 			std::map<std::string, std::string>	_headers;
 			size_t								_bytes_to_read;
-			UpFile								*_upload_file;
 			std::vector<std::string>			_file_names;
 			Listen								_server_listen;
 			std::string							_server_name;
@@ -42,7 +40,7 @@ namespace webserv {
 			Request& operator=(Request const &other);
 			~Request();
 
-			void										init(const char *raw, std::vector<ServerConfig> const &server_config);
+			void										init(const char *raw, size_t size, std::vector<ServerConfig> const &server_config);
 			bool										append_body(const char *raw, size_t size);
 			void										set_upload_file();
 			bool										has_files() const;
@@ -54,7 +52,6 @@ namespace webserv {
 			std::string const							&get_query() const;
 			std::map<std::string, std::string> const	&get_headers() const;
 			size_t const								&get_bytes_to_read() const;
-			UpFile										*get_upload_file() const;
 			std::vector<std::string> const				&get_file_names() const;
 			Listen const								&get_server_listen() const;
 			std::string const							&get_server_name() const;
