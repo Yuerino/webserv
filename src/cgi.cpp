@@ -47,7 +47,7 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map,
 		throw std::runtime_error("CGI Error - Bin file not found!");
 	LOG_D() << "Bin to run: " << bin_file << "\n";
 
-	script_name = get_value_of_key(envp_map, "REQUEST_URI");
+	script_name = get_value_of_key(envp_map, "SCRIPT_NAME");
 	if (script_name == NULL)
 		throw std::runtime_error("CGI Error - Script name not found!");
 	LOG_D() << "Script to run: " << script_name << "\n";

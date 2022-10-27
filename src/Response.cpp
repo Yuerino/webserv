@@ -390,7 +390,7 @@ namespace webserv {
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
 
 		_cgi_env["REQUEST_URI"] = _root + rtrim(_target, "/");
-		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
+		_cgi_env["SCRIPT_NAME"] = _root + rtrim(_target, "/");
 		_cgi_env["PATH_INFO"] = _cgi_path;
 		_cgi_env["PATH_TRANSLATED"] = _root + rtrim(_target, "/");
 		_cgi_env["QUERY_STRING"] = _request.get_query();
