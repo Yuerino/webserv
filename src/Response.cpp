@@ -1,23 +1,14 @@
 #include "Response.hpp"
 
 namespace webserv {
-	Response::Response(const std::vector<ServerConfig>& server_configs, const Request& request) :
-		_server_configs(),
+	Response::Response(Request& request) :
 		_request(request),
-		_status_code(request.get_flag()) {
-		_autoindex = false;
-		_is_custom_error_page = false;
-
-		std::vector<ServerConfig>::const_iterator it = server_configs.begin();
-		for (; it != server_configs.end(); ++it) {
-			if (it->get_listens().count(request.get_server_listen()) > 0)
-				_server_configs.push_back(*it);
-		}
-
-		if (_server_configs.empty()) {
-			_status_code = 404;
-		}
-	}
+		_status_code(request.get_status_code()),
+		_server_name(request.get_server_name()),
+		_server_config(request.get_server_config()),
+		_autoindex(false),
+		_is_custom_error_page(false),
+		_cgi_error(false) {}
 
 	Response::~Response() {}
 
@@ -31,7 +22,7 @@ namespace webserv {
 		}
 
 		try {
-			if (!set_server_config() || !set_location_config() || !set_method()) {
+			if (!set_location_config() || !set_method()) {
 				return set_error_response();
 			}
 
@@ -47,7 +38,6 @@ namespace webserv {
 
 			switch (_request.get_method()) {
 				case GET:
-				// case HEAD:
 					return process_get();
 				case POST:
 					return process_post();
@@ -62,34 +52,6 @@ namespace webserv {
 		}
 
 		set_error_response();
-	}
-
-	/**
-	 * @brief Set server config and server name accordingly with host header
-	 * @return true on success otherwise false and set status code to 400
-	 */
-	bool Response::set_server_config() {
-		if (_request.get_content().count("Host") == 0) {
-			_status_code = 400;
-			return false;
-		}
-
-		std::string host_name = _request.get_content().at("Host");
-		host_name = host_name.substr(0, host_name.find_first_of(":"));
-
-		std::vector<ServerConfig>::const_iterator s_it = _server_configs.begin();
-		std::set<std::string>::const_iterator n_it;
-		for (; s_it != _server_configs.end(); ++s_it) {
-			if (s_it->get_server_names().count(host_name) > 0) {
-				_server_name = host_name;
-				_server_config = *s_it;
-				return true;
-			}
-		}
-
-		_server_name = *_server_configs.at(0).get_server_names().begin();
-		_server_config = _server_configs.at(0);
-		return true;
 	}
 
 	/**
@@ -135,9 +97,18 @@ namespace webserv {
 
 		if (!_location_config.get_cgi_path().empty()) {
 			_cgi_path = _location_config.get_cgi_path();
-
-			if (access((_root + _location_config.get_location() + _cgi_path).c_str(), X_OK) == -1) {
+			if (access(_cgi_path.c_str(), X_OK) == -1) {
 				_status_code = 404;
+				return false;
+			}
+
+			if (!is_extension(rtrim(_target, "/"), _location_config.get_cgi_extension())) {
+				_status_code = 403;
+				return false;
+			}
+
+			if (!is_extension(rtrim(_target, "/"), _location_config.get_cgi_extension())) {
+				_status_code = 403;
 				return false;
 			}
 		}
@@ -150,9 +121,34 @@ namespace webserv {
 	 */
 	void Response::process_cgi() {
 		setup_cgi_env();
-		// TODO: parse cgi response
-		_body = run_cgi_script(_cgi_env);
-		_status_code = 200;
+		std::string cgi_data = run_cgi_script(_cgi_env, _request.get_body());
+
+		size_t pos = cgi_data.find("\r\n\r\n");
+		if (pos == std::string::npos) {
+			_status_code = 500;
+			_cgi_error = true;
+			return set_error_response();
+		}
+
+		try {
+			_cgi_headers = parse_header_fields(cgi_data.substr(0, pos));
+		} catch (const std::logic_error& e) {
+			_status_code = 500;
+			_cgi_error = true;
+			return set_error_response();
+		}
+
+		if (_cgi_headers.count("Location")) {
+			_status_code = 302;
+		}
+		if (_cgi_headers.count("Status")) {
+			_status_code = std::atoi(_cgi_headers.at("Status").c_str());
+		}
+		if (_status_code == 0) {
+			_status_code = 200;
+		}
+
+		_body = cgi_data.substr(pos + 4);
 		set_response();
 	}
 
@@ -185,39 +181,26 @@ namespace webserv {
 			return set_error_response();
 		}
 
-		// if (_request.get_method() == HEAD) {
-		// 	_body = "";
-		// }
-
 		_status_code = 200;
 		set_response();
 	}
 
 	void Response::process_post() {
-		if (!_request.get_UpFile()->is_file())
-			return ;
-		try
-		{
-			_request.get_UpFile()->write_to_file(_root + _target);
-		}
-		catch(const std::exception& e)
-		{
-			_status_code = 400;
-			set_error_response();
+		if (_request.has_files() && !_request.write_files(_root + _target)) {
+			_status_code = _request.get_status_code();
+			return set_error_response();
 		}
 		_status_code = 201;
 		set_response();
 	}
 
 	void Response::process_delete() {
-		if (!remove((const char *)std::string(_root + rtrim(_target, "/")).c_str())) {
-			_status_code = 204;
-			set_response();
+		if (remove(std::string(_root + rtrim(_target, "/")).c_str()) == -1) {
+			_status_code = 403;
+			return set_error_response();
 		}
-		else {
-			_status_code = 400;
-			set_error_response();
-		}
+		_status_code = 204;
+		set_response();
 	}
 
 	/**
@@ -241,13 +224,46 @@ namespace webserv {
 		_response += "Connection: close";
 		_response += CRLF;
 
+		if (!_cgi_path.empty() && !_cgi_error) {
+			std::map<std::string, std::string>::iterator it = _cgi_headers.begin();
+			for (; it != _cgi_headers.end(); ++it) {
+				if (it->first == "Status") {
+					continue;
+				}
+				_response += it->first + ": " + it->second + CRLF;
+			}
+			if (_cgi_headers.count("Content-Length") == 0) {
+				_response += "Content-Length: ";
+				_response += to_string(_body.size());
+				_response += CRLF;
+			}
+
+			_response += CRLF;
+			_response += _body;
+			return;
+		}
+
 		_response += "Content-Length: ";
-		_response += to_string(_body.length());
+		_response += to_string(_body.size());
 		_response += CRLF;
+
+		if (_status_code >= 400 && _status_code < 600) {
+			_response += "Content-Type: ";
+			if (_is_custom_error_page && rtrim(_target, "/").find_last_of('.') != std::string::npos) {
+				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
+			} else {
+				_response += "text/html";
+			}
+			_response += CRLF;
+
+			_response += CRLF;
+			_response += _body;
+			return;
+		}
 
 		if (_request.get_method() == GET) {
 			_response += "Content-Type: ";
-			if (_autoindex || (_status_code >= 400 && _status_code < 600 && !_is_custom_error_page)) {
+			if (_autoindex || !_cgi_path.empty()) {
 				_response += "text/html";
 			} else if (rtrim(_target, "/").find_last_of('.') != std::string::npos) {
 				_response += get_mime_type(rtrim(_target, "/").substr(rtrim(_target, "/").find_last_of('.')));
@@ -257,9 +273,9 @@ namespace webserv {
 			_response += CRLF;
 		}
 
-		if (_request.get_method() == POST && _request.get_UpFile() != NULL) {
+		if (_request.get_method() == POST && _request.has_files()) {
 			_response += "Location: ";
-			std::string filename = _request.get_UpFile()->get_files().begin()->first;
+			std::string filename = _request.get_file_names().at(0);
 			_response += _target + filename;
 			_response += CRLF;
 		}
@@ -271,7 +287,7 @@ namespace webserv {
 	}
 
 	void Response::get_cookies() {
-		if (_request.get_content().count("Cookie") == 0 || (_request.get_content().count("Cookie") > 0 && _request.get_content().at("Cookie").find("timestamp=") == std::string::npos)) {
+		if (_request.get_headers().count("Cookie") == 0 || (_request.get_headers().count("Cookie") > 0 && _request.get_headers().at("Cookie").find("timestamp=") == std::string::npos)) {
 			_response += "Set-Cookie: ";
 			_response += "timestamp=" + get_current_time("%H:%M:%S") + "; Max-Age=30";
 			_response += CRLF;
@@ -327,7 +343,7 @@ namespace webserv {
 		file = readdir(dir);
 		while (file != NULL) {
 			std::string file_name(file->d_name);
-			_body += "<p><a href=\"http://" + _request.get_content().at("Host") + rtrim(_target, "/") + "/" + file_name + "\">" + file_name + "</a></p>";
+			_body += "<p><a href=\"http://" + _request.get_headers().at("Host") + rtrim(_target, "/") + "/" + file_name + "\">" + file_name + "</a></p>";
 			file = readdir(dir);
 		}
 
@@ -365,63 +381,6 @@ namespace webserv {
 		_response += CRLF;
 	}
 
-	/* Getter */
-	const std::string& Response::get_raw_data() const {
-		return _response;
-	}
-
-	/**
-	 * @brief Get the HTTP Message of status code
-	 * @note Static function
-	 */
-	std::string Response::get_status_message(const int& status_code) {
-		switch(status_code) {
-			case 200:
-				return "OK";
-			case 201:
-				return "Created";
-			case 202:
-				return "Accepted";
-			case 204:
-				return "No Content";
-			case 300:
-				return "Multiple Choices";
-			case 301:
-				return "Moved Permanently";
-			case 302:
-				return "Found";
-			case 303:
-				return "See Other";
-			case 400:
-				return "Bad Request";
-			case 401:
-				return "Unauthorized";
-			case 403:
-				return "Forbidden";
-			case 404:
-				return "Not Found";
-			case 405:
-				return "Method Not Allowed";
-			case 413:
-				return "Request Too Large";
-			case 418:
-				return "I'm a teapot";
-			case 500:
-				return "Internal Server Error";
-			case 501:
-				return "Not Implemented";
-			case 502:
-				return "Bad Gateway";
-			case 503:
-				return "Service Unavailable";
-			case 505:
-				return "HTTP Version Not Supported";
-			default:
-				return "Not Implemented";
-		}
-		return "Not Implemented";
-	}
-
 	void Response::setup_cgi_env() {
 		_cgi_env["SERVER_SOFTWARE"] = "webserv/6.9";
 		_cgi_env["SERVER_NAME"] = _server_name;
@@ -430,22 +389,37 @@ namespace webserv {
 		_cgi_env["SERVER_PORT"] = to_string(_request.get_server_listen().port);
 		_cgi_env["REQUEST_METHOD"] = HTTPMethodStrings[_request.get_method()];
 
-		_cgi_env["REQUEST_URI"] = rtrim(_target, "/");;
-		_cgi_env["SCRIPT_NAME"] = rtrim(_target, "/");
-		_cgi_env["PATH_INFO"] = _root + _target + _cgi_path;
-		_cgi_env["PATH_TRANSLATED"] = _root + _target + _cgi_path;
-		_cgi_env["QUERY_STRING"] = ""; // TODO
+		_cgi_env["REQUEST_URI"] = _root + rtrim(_target, "/");
+		_cgi_env["SCRIPT_NAME"] = _root + rtrim(_target, "/");
+		_cgi_env["PATH_INFO"] = _cgi_path;
+		_cgi_env["PATH_TRANSLATED"] = _root + rtrim(_target, "/");
+		_cgi_env["QUERY_STRING"] = _request.get_query();
 
-		_cgi_env["AUTH_TYPE"] = "";
-		_cgi_env["REMOTE_USER"] = "";
-
-		_cgi_env["CONTENT_TYPE"] = "";
-		_cgi_env["CONTENT_LENGTH"] = "";
+		if (_request.get_headers().count("Content-Type") > 0)
+			_cgi_env["CONTENT_TYPE"] = _request.get_headers().at("Content-Type");
+		else
+			_cgi_env["CONTENT_TYPE"] = "";
+		if (_request.get_headers().count("Content-Length") > 0)
+			_cgi_env["CONTENT_LENGTH"] = _request.get_headers().at("Content-Length");
+		else
+			_cgi_env["CONTENT_LENGTH"] = "";
+		_cgi_env["REDIRECT_STATUS"] = "1";
 
 		char client_address[69];
 		inet_ntop(AF_INET, &(_request.get_client().sin_addr), client_address, 69);
 		_cgi_env["REMOTE_ADDR"] = std::string(client_address);
 
-		// TODO: add remaining cgi env from header
+		// Request header HTTP
+		std::map<std::string, std::string>::const_iterator header_it = _request.get_headers().begin();
+		for (; header_it != _request.get_headers().end(); ++header_it) {
+			std::string header_name = header_it->first;
+			for (size_t i = 0; i < header_name.length(); ++i) {
+				header_name[i] = toupper(header_name[i]);
+			}
+			_cgi_env["HTTP_" + header_name] = header_it->second;
+		}
 	}
+
+	/* Getter */
+	const std::string& Response::get_raw_data() const { return _response; }
 } /* namespace webserv */

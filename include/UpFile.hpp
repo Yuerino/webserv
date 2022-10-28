@@ -33,6 +33,7 @@ namespace webserv
 			std::string const	&get_delimiter(void) const;
 			std::string const	&get_fileName(void) const;
 			std::string const	&get_fileContent(void) const;
+			std::string const	&get_buffer(void) const;
 			std::map<std::string, std::string> const	&get_files() const;
 
 			void				set_delimiter(std::string delimiter);

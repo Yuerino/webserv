@@ -22,12 +22,14 @@ void sig_handler(int num) {
 int main(int argc, char **argv) {
 	LOG_FILE("webserv.log");
 
+	std::string file;
 	if (argc != 2) {
-		LOG_E() << "Invalid number of arguments. Usage: ./webserv [ config file ]\n";
-		return EXIT_FAILURE;
+		file = "config/default.conf";
+	} else {
+		file = argv[1];
 	}
 
-	if (!webserv::is_extension(argv[1], ".conf")) {
+	if (!webserv::is_extension(file, ".conf")) {
 		LOG_E() << "Invalid configuration file extension.\n";
 		return EXIT_FAILURE;
 	}
@@ -37,14 +39,14 @@ int main(int argc, char **argv) {
 
 	webserv::Parser parser;
 	try {
-		webserv::Server server(parser.parse(webserv::file_to_string(argv[1])));
+		webserv::Server server(parser.parse(webserv::file_to_string(file)));
 		server.init();
 		server.run();
 	} catch (const webserv::ParserExceptionAtLine& e) {
-		LOG_E() << "[" << argv[1] << ":" << e.get_line() << "] " << e.what() << "\n";
+		LOG_E() << "[" << file << ":" << e.get_line() << "] " << e.what() << "\n";
 		return EXIT_FAILURE;
 	} catch (const webserv::ParserException& e) {
-		LOG_E() << "[" << argv[1] << "] " << e.what() << "\n";
+		LOG_E() << "[" << file << "] " << e.what() << "\n";
 		return EXIT_FAILURE;
 	} catch (const std::exception& e) {
 		LOG_E() << e.what() << "\n";

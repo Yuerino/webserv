@@ -40,6 +40,11 @@ namespace webserv
 		return (_fileContent);
 	}
 
+	std::string const	&UpFile::get_buffer(void) const
+	{
+		return (_buffer);
+	}
+
 	void				UpFile::set_delimiter(std::string delimiter)
 	{
 		_delimiter = delimiter;

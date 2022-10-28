@@ -1,5 +1,4 @@
 #include "Server.hpp"
-#include "Request.hpp"
 
 namespace webserv {
 	bool internal::g_shutdown = false;
@@ -195,7 +194,7 @@ namespace webserv {
 		}
 
 		if (_clients.count(client_fd) == 0) {
-			_clients[client_fd] = Request(client_address, _socket_fds.find(socket_fd)->second);
+			_clients.insert(std::make_pair(client_fd, Request(client_address, _socket_fds.find(socket_fd)->second)));
 		} else {
 			LOG_E() << "Client fd: " << client_fd << " somehow already connected server\n";
 		}
@@ -205,8 +204,8 @@ namespace webserv {
 	 * @brief Handle read from client
 	 */
 	void Server::handle_read_event(const int& client_fd) {
-		char buffer[READ_BUFFER];
-		ssize_t bytesRead = recv(client_fd, buffer, 2048, 0);
+		char buffer[READ_BUFFER + 1];
+		ssize_t bytesRead = recv(client_fd, buffer, READ_BUFFER, 0);
 
 		if (bytesRead == -1 || bytesRead == 0) {
 			LOG_E() << "Failed to read data from client fd: " << client_fd << "\n";
@@ -214,38 +213,25 @@ namespace webserv {
 		}
 
 		buffer[bytesRead] = '\0';
-		LOG_I() << "Received a message from client fd: " << client_fd << ", message: " << buffer << "\n";
+		LOG_I() << "Received a message from client fd: " << client_fd << ", size: " << bytesRead << ", message: " << buffer << "\n";
 
 		if (_clients.count(client_fd) == 0) {
 			LOG_E() << "Client fd: " << client_fd << " somehow not added into client list\n";
 			return;
 		}
 
-		if (_clients[client_fd].get_method() == -1) {
-			_clients[client_fd].init(std::string(buffer));
-		}
+		Request& req = _clients.at(client_fd);
 
-		Request& req = _clients[client_fd];
+		if (req.get_method() == -1) {
+			req.init(buffer, bytesRead, _server_configs);
 
-		if (req.get_bytes_to_read() == 0) {
-			req.set_bytes_to_read();
-			if ((get_server_config(req).get_client_max_body_size() > -1) && (req.get_bytes_to_read() > (u_long)get_server_config(req).get_client_max_body_size())) {
-				req.set_flag(413);
+			if (req.get_status_code() != 0 || req.get_bytes_to_read() == 0) {
 				_iohandler.set_write_ready(client_fd);
 			}
-			else if (req.check_single_chunk(std::string(buffer)))
-				_iohandler.set_write_ready(client_fd);
-		} else {
-			req.mod_bytes_to_read(bytesRead);
-			req.set_UpFile(buffer, bytesRead);
+			return;
 		}
 
-		LOG_D() << req.get_method() << "\n";
-		LOG_D() << req.get_path() << "\n";
-		LOG_D() << req.get_scheme() << "\n";
-		LOG_D() << req.get_bytes_to_read() << "\n";
-
-		if (req.get_bytes_to_read() == 0) {
+		if (req.append_body(buffer, bytesRead)) {
 			_iohandler.set_write_ready(client_fd);
 		}
 	}
@@ -259,10 +245,7 @@ namespace webserv {
 			return;
 		}
 
-		// if (_clients[client_fd].get_UpFile())
-		// 	_clients[client_fd].get_UpFile()->write_to_file("./test/");
-
-		Response response(_server_configs, _clients[client_fd]);
+		Response response(_clients.at(client_fd));
 		response.process();
 
 		int ret = send(client_fd, response.get_raw_data().c_str(), response.get_raw_data().size(), 0);
@@ -274,31 +257,5 @@ namespace webserv {
 		}
 
 		remove_client(client_fd);
-	}
-	/**
-	 * @brief Returns the configurations of the server specified in the request
-	 */
-	ServerConfig Server::get_server_config(Request const &req) const
-	{
-		std::vector<ServerConfig> matching;
-		std::vector<ServerConfig>::const_iterator it = _server_configs.begin();
-		for (; it != _server_configs.end(); ++it) {
-			if (it->get_listens().count(req.get_server_listen()) > 0)
-				matching.push_back(*it);
-		}
-
-		if (req.get_content().count("Host")) {
-			std::string host_name = req.get_content().at("Host");
-			host_name = host_name.substr(0, host_name.find_first_of(":"));
-
-			std::vector<ServerConfig>::const_iterator s_it = matching.begin();
-			std::set<std::string>::const_iterator n_it;
-			for (; s_it != matching.end(); ++s_it) {
-				if (s_it->get_server_names().count(host_name) > 0) {
-					return (*s_it);
-				}
-			}
-		}
-		return (_server_configs.at(0));
 	}
 } /* namespace webserv */
