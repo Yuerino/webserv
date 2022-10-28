@@ -45,12 +45,12 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map,
 	bin_file = get_value_of_key(envp_map, "PATH_INFO");
 	if (bin_file == NULL)
 		throw std::runtime_error("CGI Error - Bin file not found!");
-	LOG_D() << "Bin to run: " << bin_file << "\n";
+	// LOG_D() << "Bin to run: " << bin_file << "\n";
 
 	script_name = get_value_of_key(envp_map, "SCRIPT_NAME");
 	if (script_name == NULL)
 		throw std::runtime_error("CGI Error - Script name not found!");
-	LOG_D() << "Script to run: " << script_name << "\n";
+	// LOG_D() << "Script to run: " << script_name << "\n";
 
 	create_envp(envp, envp_map);
 	argv[0] = (char *)bin_file;
@@ -65,7 +65,7 @@ std::string run_cgi_script(std::map<std::string, std::string> envp_map,
 	else if (pid == 0) // child
 	{
 		method = envp_map.find("REQUEST_METHOD")->second.c_str();
-		LOG_D() << "REQUEST_METHOD=" << method << '\n';
+		// LOG_D() << "REQUEST_METHOD=" << method << '\n';
 		if (std::strcmp(method, "POST") == 0 && request_body.length() > 0)
 		{
 			FILE *file = std::fopen("tempfile_", "w");
